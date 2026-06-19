@@ -1,0 +1,89 @@
+'use client';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { IoPaperPlane, IoCheckmarkCircle, IoLocation, IoMail, IoCall } from 'react-icons/io5';
+import { FaGithub, FaLinkedin, FaWhatsapp } from 'react-icons/fa';
+import { useSocialLinks, useSettings } from '@/hooks/useApi';
+
+const Contact = () => {
+  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const [sent, setSent] = useState(false);
+  const { data: links = [] } = useSocialLinks();
+  const { data: settings } = useSettings();
+  const s = settings || {};
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!form.name || !form.email || !form.message) return;
+    setSent(true);
+    setTimeout(() => { setSent(false); setForm({ name: '', email: '', subject: '', message: '' }); }, 3000);
+  };
+
+  return (
+    <section id="contact" className="relative py-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          className="text-4xl md:text-5xl font-bold text-center mb-4 gradient-text">Get In Touch</motion.h2>
+        <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+          className="text-center text-gray-400 mb-12 max-w-2xl mx-auto">Have a project in mind? Let&apos;s connect</motion.p>
+
+        <div className="grid lg:grid-cols-2 gap-12">
+          <motion.form initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
+            onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <input type="text" name="name" placeholder="Your Name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required
+                className="w-full px-4 py-3 glass rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+              <input type="email" name="email" placeholder="Your Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required
+                className="w-full px-4 py-3 glass rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+            </div>
+            <input type="text" name="subject" placeholder="Subject" value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })}
+              className="w-full px-4 py-3 glass rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+            <textarea name="message" placeholder="Your Message" value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} required rows={5}
+              className="w-full px-4 py-3 glass rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" />
+            <motion.button type="submit" disabled={sent} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              className={`w-full py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all cursor-pointer ${sent ? 'bg-green-500 text-white' : 'bg-primary text-white hover:bg-primary/90'}`}>
+              {sent ? <><IoCheckmarkCircle size={20} /> Message Sent!</> : <><IoPaperPlane size={18} /> Send Message</>}
+            </motion.button>
+          </motion.form>
+
+          <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="glass p-4 rounded-xl">
+                <IoMail className="text-primary mb-2" size={20} />
+                <p className="text-xs text-gray-400">Email</p>
+                <a href={`mailto:${s.email || ''}`} className="text-sm text-primary hover:underline">{s.email || 'email@example.com'}</a>
+              </div>
+              <div className="glass p-4 rounded-xl">
+                <IoCall className="text-primary mb-2" size={20} />
+                <p className="text-xs text-gray-400">Phone</p>
+                <p className="text-sm">{s.phone || '+92 300 1234567'}</p>
+              </div>
+              <div className="glass p-4 rounded-xl">
+                <IoLocation className="text-primary mb-2" size={20} />
+                <p className="text-xs text-gray-400">Location</p>
+                <p className="text-sm">{s.location || 'Karachi, Pakistan'}</p>
+              </div>
+              <div className="glass p-4 rounded-xl">
+                <p className="text-xs text-gray-400 mb-1">Freelance</p>
+                <p className="text-sm text-green-400">Available</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              {links.map(link => {
+                const Icon = { FaGithub, FaLinkedin, FaWhatsapp }[link.icon] || FaGithub;
+                return (
+                  <motion.a key={link._id} href={link.url} target="_blank" rel="noopener noreferrer" aria-label={link.platform}
+                    whileHover={{ scale: 1.1, y: -3 }} className="p-3 glass rounded-xl text-gray-400 hover:text-primary transition-all">
+                    <Icon size={20} />
+                  </motion.a>
+                );
+              })}
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default Contact;
