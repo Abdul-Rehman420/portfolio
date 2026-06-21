@@ -16,7 +16,12 @@ const fields = [
 ];
 
 export default function ExperiencePage() {
-  const hook = useExperiences;
-  hook.mutations = useExperienceMutations();
-  return <AdminCrudPage title="Experience" fields={fields} useHook={hook} endpoint="experience" />;
+  const mutations = useExperienceMutations();
+  return <AdminCrudPage 
+    title="Experience" 
+    fields={fields} 
+    useHook={useExperiences} 
+    mutations={mutations}
+    endpoint="experience" 
+  />;
 }

@@ -10,7 +10,12 @@ const fields = [
 ];
 
 export default function SocialLinksPage() {
-  const hook = useSocialLinks;
-  hook.mutations = useSocialLinkMutations();
-  return <AdminCrudPage title="Social Links" fields={fields} useHook={hook} endpoint="social-links" />;
+  const mutations = useSocialLinkMutations();
+  return <AdminCrudPage 
+    title="Social Links" 
+    fields={fields} 
+    useHook={useSocialLinks} 
+    mutations={mutations}
+    endpoint="social-links" 
+  />;
 }

@@ -13,7 +13,12 @@ const fields = [
 ];
 
 export default function EducationPage() {
-  const hook = useEducation;
-  hook.mutations = useEducationMutations();
-  return <AdminCrudPage title="Education" fields={fields} useHook={hook} endpoint="education" />;
+  const mutations = useEducationMutations();
+  return <AdminCrudPage 
+    title="Education" 
+    fields={fields} 
+    useHook={useEducation} 
+    mutations={mutations}
+    endpoint="education" 
+  />;
 }

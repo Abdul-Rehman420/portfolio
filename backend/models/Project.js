@@ -6,7 +6,7 @@ const projectSchema = new mongoose.Schema(
     description: { type: String, required: true },
     longDescription: { type: String },
     image: { type: String, default: '' },
-    images: [{ type: String }],
+    images: [{ type: String }], // Already exists - supports multiple images
     github: { type: String, default: '' },
     liveDemo: { type: String, default: '' },
     caseStudy: { type: String, default: '' },

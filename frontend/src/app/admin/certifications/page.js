@@ -1,18 +1,24 @@
 'use client';
 import AdminCrudPage from '@/components/admin/AdminCrudPage';
-import { useCertifications, useCertificationMutations } from '@/hooks/useApi';
+import { useEducation, useEducationMutations } from '@/hooks/useApi';
 
 const fields = [
-  { key: 'image', label: 'Image', type: 'image' },
-  { key: 'title', label: 'Title', type: 'text' },
-  { key: 'issuer', label: 'Issuer', type: 'text' },
-  { key: 'date', label: 'Date', type: 'text' },
-  { key: 'link', label: 'Verification Link', type: 'text' },
+  { key: 'degree', label: 'Degree', type: 'text' },
+  { key: 'institution', label: 'Institution', type: 'text' },
+  { key: 'duration', label: 'Duration', type: 'text' },
+  { key: 'cgpa', label: 'CGPA', type: 'text' },
+  { key: 'description', label: 'Description', type: 'textarea' },
+  { key: 'certificates', label: 'Certificates', type: 'tags', placeholder: 'Add certificate' },
   { key: 'order', label: 'Order', type: 'number' },
 ];
 
-export default function CertificationsPage() {
-  const hook = useCertifications;
-  hook.mutations = useCertificationMutations();
-  return <AdminCrudPage title="Certifications" fields={fields} useHook={hook} endpoint="certifications" />;
+export default function EducationPage() {
+  const mutations = useEducationMutations();
+  return <AdminCrudPage 
+    title="Education" 
+    fields={fields} 
+    useHook={useEducation} 
+    mutations={mutations}
+    endpoint="education" 
+  />;
 }

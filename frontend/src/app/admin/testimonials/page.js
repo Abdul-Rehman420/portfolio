@@ -13,7 +13,12 @@ const fields = [
 ];
 
 export default function TestimonialsPage() {
-  const hook = useTestimonials;
-  hook.mutations = useTestimonialMutations();
-  return <AdminCrudPage title="Testimonials" fields={fields} useHook={hook} endpoint="testimonials" />;
+  const mutations = useTestimonialMutations();
+  return <AdminCrudPage 
+    title="Testimonials" 
+    fields={fields} 
+    useHook={useTestimonials} 
+    mutations={mutations}
+    endpoint="testimonials" 
+  />;
 }

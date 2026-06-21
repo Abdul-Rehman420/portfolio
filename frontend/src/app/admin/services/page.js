@@ -11,7 +11,12 @@ const fields = [
 ];
 
 export default function ServicesPage() {
-  const hook = useServices;
-  hook.mutations = useServiceMutations();
-  return <AdminCrudPage title="Services" fields={fields} useHook={hook} endpoint="services" />;
+  const mutations = useServiceMutations();
+  return <AdminCrudPage 
+    title="Services" 
+    fields={fields} 
+    useHook={useServices} 
+    mutations={mutations}
+    endpoint="services" 
+  />;
 }

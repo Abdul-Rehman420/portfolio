@@ -8,7 +8,7 @@ const api = axios.create({
   headers: { 
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // 30 second timeout
+  timeout: 120000, // Increase timeout to 120 seconds (2 minutes)
 });
 
 // Request interceptor to add token
@@ -69,13 +69,64 @@ export const createItem = (endpoint, data) => api.post(`/${endpoint}`, data).the
 export const updateItem = (endpoint, id, data) => api.put(`/${endpoint}/${id}`, data).then(r => r.data);
 export const deleteItem = (endpoint, id) => api.delete(`/${endpoint}/${id}`).then(r => r.data);
 
-// Upload
-export const uploadImage = (file) => {
+// Upload with retry logic and progress tracking
+export const uploadImage = async (file, retries = 3) => {
   const fd = new FormData();
   fd.append('image', file);
-  return api.post('/upload', fd, { 
-    headers: { 'Content-Type': 'multipart/form-data' } 
-  }).then(r => r.data);
+  
+  let lastError;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      // Create a separate axios instance with longer timeout for uploads
+      const uploadApi = axios.create({
+        baseURL: API_BASE,
+        timeout: 180000, // 3 minutes for uploads
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      
+      // Add auth token
+      if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('admin_token');
+        if (token) {
+          uploadApi.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        }
+      }
+      
+      const response = await uploadApi.post('/upload', fd);
+      return response.data;
+    } catch (error) {
+      lastError = error;
+      console.log(`Upload attempt ${attempt}/${retries} failed:`, error.message);
+      
+      // Don't retry if it's a client error (4xx) except for timeout (408)
+      if (error.response && error.response.status >= 400 && error.response.status < 500 && error.response.status !== 408) {
+        break;
+      }
+      
+      // Don't retry if it's a network error and we've reached the last attempt
+      if (attempt === retries) {
+        break;
+      }
+      
+      // Wait before retrying (exponential backoff)
+      const delay = Math.pow(2, attempt) * 1000;
+      console.log(`Retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  // Throw the last error with a meaningful message
+  if (lastError) {
+    if (lastError.response) {
+      throw new Error(lastError.response.data?.message || `Server error: ${lastError.response.status}`);
+    } else if (lastError.request) {
+      throw new Error('No response from server. Please check your network connection.');
+    } else {
+      throw new Error(lastError.message || 'Upload failed');
+    }
+  }
+  
+  throw new Error('Upload failed after multiple attempts');
 };
 
 export default api;

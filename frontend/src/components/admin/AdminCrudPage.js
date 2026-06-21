@@ -5,9 +5,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { IoAdd, IoSearch, IoTrash, IoClose } from 'react-icons/io5';
 import toast from 'react-hot-toast';
 import { createItem, updateItem, deleteItem, uploadImage } from '@/lib/api';
-// Note: We'll keep using img for now, but you can upgrade to Next.js Image later
+import Image from 'next/image';
 
-// Component for tags input - renamed with uppercase to follow React conventions
+// Component for tags input
 const TagsInput = ({ value = [], onChange, placeholder }) => {
   const [input, setInput] = useState('');
   const addTag = () => { 
@@ -57,38 +57,146 @@ const TagsInput = ({ value = [], onChange, placeholder }) => {
   );
 };
 
-// Image upload component
+// Image upload component with Next.js Image
 const ImageUpload = ({ value, onChange }) => {
+  const [uploading, setUploading] = useState(false);
+
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    setUploading(true);
     try {
-      const { uploadImage } = await import('@/lib/api');
       const result = await uploadImage(file);
       onChange(result.url);
-      toast.success('Image uploaded');
-    } catch {
-      toast.error('Upload failed');
+      toast.success('Image uploaded successfully');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error(error.message || 'Upload failed');
+    } finally {
+      setUploading(false);
     }
   };
+
   return (
     <div>
       {value && (
         <div className="w-full h-32 relative rounded-lg mb-2 overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img 
+          <Image 
             src={value} 
             alt="preview" 
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            unoptimized={value.startsWith('http')}
           />
         </div>
       )}
       <input 
         type="file" 
         accept="image/*" 
-        onChange={handleFile} 
-        className="text-sm text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary/20 file:text-primary file:text-sm hover:file:bg-primary/30" 
+        onChange={handleFile}
+        disabled={uploading}
+        className="text-sm text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary/20 file:text-primary file:text-sm hover:file:bg-primary/30 disabled:opacity-50 cursor-pointer" 
       />
+      {uploading && <span className="text-xs text-primary ml-2">Uploading...</span>}
+    </div>
+  );
+};
+
+// Multi-image upload component with progress tracking
+const MultiImageUpload = ({ value = [], onChange }) => {
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState('');
+
+  const handleFile = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    setUploading(true);
+    setProgress(0);
+    setUploadStatus(`Uploading 0/${files.length}...`);
+    
+    try {
+      const newImages = [];
+      let completed = 0;
+      
+      for (const file of files) {
+        setUploadStatus(`Uploading ${completed + 1}/${files.length}...`);
+        try {
+          const result = await uploadImage(file);
+          newImages.push(result.url);
+          completed++;
+          setProgress(Math.round((completed / files.length) * 100));
+        } catch (err) {
+          console.error(`Failed to upload ${file.name}:`, err);
+          toast.error(`Failed to upload ${file.name}: ${err.message}`);
+        }
+      }
+      
+      if (newImages.length > 0) {
+        onChange([...value, ...newImages]);
+        toast.success(`${newImages.length} image(s) uploaded successfully`);
+      }
+    } catch (error) {
+      toast.error('Upload failed: ' + error.message);
+    } finally {
+      setUploading(false);
+      setProgress(0);
+      setUploadStatus('');
+    }
+  };
+
+  const removeImage = (index) => {
+    onChange(value.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+        {value.map((url, index) => (
+          <div key={index} className="relative aspect-video rounded-lg overflow-hidden group">
+            <Image 
+              src={url} 
+              alt={`Project image ${index + 1}`} 
+              fill
+              className="object-cover"
+              unoptimized={url.startsWith('http')}
+            />
+            <button
+              type="button"
+              onClick={() => removeImage(index)}
+              className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-600 rounded-full text-white transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+            >
+              <IoClose size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+      
+      {uploading ? (
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-2 bg-gray-700/50 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <span className="text-xs text-primary whitespace-nowrap">{progress}%</span>
+          </div>
+          <p className="text-xs text-gray-400">{uploadStatus}</p>
+        </div>
+      ) : (
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleFile}
+          disabled={uploading}
+          className="text-sm text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary/20 file:text-primary file:text-sm hover:file:bg-primary/30 disabled:opacity-50 cursor-pointer"
+        />
+      )}
     </div>
   );
 };
@@ -121,10 +229,11 @@ const fieldTypes = {
   select: SelectField,
   tags: TagsInput,
   image: ImageUpload,
+  multiImage: MultiImageUpload,
 };
 
-// Create a wrapper component to handle mutations conditionally
-function MutationsWrapper({ endpoint, children }) {
+// Mutations Wrapper Component
+const MutationsWrapper = ({ endpoint, children }) => {
   const qc = useQueryClient();
 
   const create = useMutation({
@@ -141,130 +250,10 @@ function MutationsWrapper({ endpoint, children }) {
   });
   
   return children({ create, update, remove });
-}
+};
 
-export default function AdminCrudPage({ title, fields, useHook, endpoint }) {
-  const [search, setSearch] = useState('');
-  const [editing, setEditing] = useState(null);
-  const [deleting, setDeleting] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({});
-
-  // FIX: Properly handle the hook response to prevent "map is not a function" error
-  const hookResult = useHook();
-  
-  // Safely extract data and loading state regardless of response format
-  let items = [];
-  let isLoading = false;
-  let error = null;
-  let hookMutations = null;
-  
-  if (Array.isArray(hookResult)) {
-    // If hook returns array directly
-    items = hookResult;
-  } else if (hookResult && typeof hookResult === 'object') {
-    // If hook returns object with data property
-    items = hookResult.data || [];
-    isLoading = hookResult.isLoading || false;
-    error = hookResult.error || null;
-    hookMutations = hookResult.mutations || null;
-    
-    // Handle case where data might be wrapped in another layer
-    if (Array.isArray(hookResult.items)) {
-      items = hookResult.items;
-    }
-  }
-  
-  // Ensure items is always an array
-  if (!Array.isArray(items)) {
-    console.warn('Items is not an array, defaulting to empty array:', items);
-    items = [];
-  }
-
-  // Safe filtering - ensure we only call filter on arrays
-  const filtered = items.filter(item => {
-    if (!search) return true;
-    return Object.values(item).some(v => {
-      if (v === null || v === undefined) return false;
-      return String(v).toLowerCase().includes(search.toLowerCase());
-    });
-  });
-
-  const resetForm = () => {
-    setForm({});
-    setEditing(null);
-    setShowForm(false);
-  };
-
-  const openEdit = (item) => {
-    setForm(item);
-    setEditing(item);
-    setShowForm(true);
-  };
-
-  if (isLoading) {
-    return <div className="text-center py-12 text-gray-400">Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="text-center py-12 text-red-400">Error loading {title.toLowerCase()}: {error.message}</div>;
-  }
-
-  // If mutations are provided by the hook, use them; otherwise use the wrapper
-  if (hookMutations) {
-    return (
-      <AdminCrudContent
-        title={title}
-        fields={fields}
-        items={items}
-        filtered={filtered}
-        search={search}
-        setSearch={setSearch}
-        editing={editing}
-        setEditing={setEditing}
-        deleting={deleting}
-        setDeleting={setDeleting}
-        showForm={showForm}
-        setShowForm={setShowForm}
-        form={form}
-        setForm={setForm}
-        resetForm={resetForm}
-        openEdit={openEdit}
-        mutations={hookMutations}
-      />
-    );
-  }
-
-  // Use the mutations wrapper for generic mutations
-  return (
-    <MutationsWrapper endpoint={endpoint}>
-      {({ create, update, remove }) => (
-        <AdminCrudContent
-          title={title}
-          fields={fields}
-          items={items}
-          filtered={filtered}
-          search={search}
-          setSearch={setSearch}
-          editing={editing}
-          setEditing={setEditing}
-          deleting={deleting}
-          setDeleting={setDeleting}
-          showForm={showForm}
-          setShowForm={setShowForm}
-          form={form}
-          setForm={setForm}
-          resetForm={resetForm}
-          openEdit={openEdit}
-          mutations={{ create, update, remove }}
-        />
-      )}
-    </MutationsWrapper>
-  );
-}
-
-// Separate component for the main content to avoid conditional hooks
-function AdminCrudContent({ 
+// AdminCrudContent Component
+const AdminCrudContent = ({ 
   title, 
   fields, 
   items, 
@@ -282,7 +271,7 @@ function AdminCrudContent({
   resetForm,
   openEdit,
   mutations 
-}) {
+}) => {
   const { create, update, remove } = mutations;
 
   const handleSave = async (e) => {
@@ -464,13 +453,18 @@ function AdminCrudContent({
                           <span className="line-clamp-1">
                             {f.type === 'image' && item[f.key] ? (
                               <div className="w-10 h-10 rounded-lg overflow-hidden relative">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img 
+                                <Image 
                                   src={item[f.key]} 
                                   alt="" 
-                                  className="w-full h-full object-cover"
+                                  fill
+                                  className="object-cover"
+                                  unoptimized={item[f.key].startsWith('http')}
                                 />
                               </div>
+                            ) : f.type === 'multiImage' && item[f.key]?.length > 0 ? (
+                              <span className="text-xs text-primary">
+                                {item[f.key].length} image{item[f.key].length > 1 ? 's' : ''}
+                              </span>
                             ) : f.type === 'tags' ? (
                               (Array.isArray(item[f.key]) ? item[f.key] : []).join(', ')
                             ) : f.type === 'number' ? (
@@ -512,5 +506,126 @@ function AdminCrudContent({
         </div>
       </div>
     </div>
+  );
+};
+
+// Main AdminCrudPage Component
+export default function AdminCrudPage({ title, fields, useHook, mutations: propMutations, endpoint }) {
+  const [search, setSearch] = useState('');
+  const [editing, setEditing] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({});
+
+  // Use the hook to get data
+  const hookResult = useHook();
+  
+  // Safely extract data and loading state
+  let items = [];
+  let isLoading = false;
+  let error = null;
+  let hookMutations = null;
+  
+  if (Array.isArray(hookResult)) {
+    items = hookResult;
+  } else if (hookResult && typeof hookResult === 'object') {
+    items = hookResult.data || [];
+    isLoading = hookResult.isLoading || false;
+    error = hookResult.error || null;
+    hookMutations = hookResult.mutations || null;
+    
+    if (Array.isArray(hookResult.items)) {
+      items = hookResult.items;
+    }
+  }
+  
+  // Ensure items is always an array
+  if (!Array.isArray(items)) {
+    console.warn('Items is not an array, defaulting to empty array:', items);
+    items = [];
+  }
+
+  // Use propMutations if provided, otherwise use hookMutations
+  const mutations = propMutations || hookMutations;
+
+  const resetForm = () => {
+    setForm({});
+    setEditing(null);
+    setShowForm(false);
+  };
+
+  const openEdit = (item) => {
+    setForm(item);
+    setEditing(item);
+    setShowForm(true);
+  };
+
+  // Filter items
+  const filtered = items.filter(item => {
+    if (!search) return true;
+    return Object.values(item).some(v => {
+      if (v === null || v === undefined) return false;
+      return String(v).toLowerCase().includes(search.toLowerCase());
+    });
+  });
+
+  if (isLoading) {
+    return <div className="text-center py-12 text-gray-400">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-12 text-red-400">Error loading {title.toLowerCase()}: {error.message}</div>;
+  }
+
+  // If no mutations available, use the wrapper
+  if (!mutations) {
+    return (
+      <MutationsWrapper endpoint={endpoint}>
+        {(wrapperMutations) => (
+          <AdminCrudContent
+            title={title}
+            fields={fields}
+            items={items}
+            filtered={filtered}
+            search={search}
+            setSearch={setSearch}
+            editing={editing}
+            setEditing={setEditing}
+            deleting={deleting}
+            setDeleting={setDeleting}
+            showForm={showForm}
+            setShowForm={setShowForm}
+            form={form}
+            setForm={setForm}
+            resetForm={resetForm}
+            openEdit={openEdit}
+            mutations={wrapperMutations}
+          />
+        )}
+      </MutationsWrapper>
+    );
+  }
+
+  // Use the provided mutations
+  return (
+    <AdminCrudContent
+      title={title}
+      fields={fields}
+      items={items}
+      filtered={filtered}
+      search={search}
+      setSearch={setSearch}
+      editing={editing}
+      setEditing={setEditing}
+      deleting={deleting}
+      setDeleting={setDeleting}
+      showForm={showForm}
+      setShowForm={setShowForm}
+      form={form}
+      setForm={setForm}
+      resetForm={resetForm}
+      openEdit={openEdit}
+      mutations={mutations}
+    />
   );
 }

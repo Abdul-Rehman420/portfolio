@@ -10,7 +10,12 @@ const fields = [
 ];
 
 export default function SkillsPage() {
-  const hook = useSkills;
-  hook.mutations = useSkillMutations();
-  return <AdminCrudPage title="Skills" fields={fields} useHook={hook} endpoint="skills" />;
+  const mutations = useSkillMutations();
+  return <AdminCrudPage 
+    title="Skills" 
+    fields={fields} 
+    useHook={useSkills} 
+    mutations={mutations}
+    endpoint="skills" 
+  />;
 }

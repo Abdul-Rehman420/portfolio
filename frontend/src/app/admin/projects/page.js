@@ -3,7 +3,8 @@ import AdminCrudPage from '@/components/admin/AdminCrudPage';
 import { useProjects, useProjectMutations } from '@/hooks/useApi';
 
 const fields = [
-  { key: 'image', label: 'Image', type: 'image' },
+  { key: 'image', label: 'Main Image', type: 'image' },
+  { key: 'images', label: 'Additional Images', type: 'multiImage' },
   { key: 'title', label: 'Title', type: 'text' },
   { key: 'description', label: 'Description', type: 'textarea' },
   { key: 'category', label: 'Category', type: 'text' },
@@ -24,7 +25,12 @@ const fields = [
 ];
 
 export default function ProjectsPage() {
-  const hook = useProjects;
-  hook.mutations = useProjectMutations();
-  return <AdminCrudPage title="Projects" fields={fields} useHook={hook} endpoint="projects" />;
+  const mutations = useProjectMutations();
+  return <AdminCrudPage 
+    title="Projects" 
+    fields={fields} 
+    useHook={useProjects} 
+    mutations={mutations}
+    endpoint="projects" 
+  />;
 }
