@@ -8,6 +8,11 @@ import { uploadImage } from '@/lib/api';
 import Image from 'next/image';
 import ImageCropModal from '@/components/admin/ImageCropModal';
 import JourneyItemsEditor from '@/components/admin/JourneyItemsEditor';
+import FooterSettingsEditor from '@/components/admin/FooterSettingsEditor';
+import { 
+  IoHome, IoPerson, IoCodeSlash, IoFolder, IoBriefcase, 
+  IoSettings, IoPeople, IoMail, IoEyeOff, IoEye 
+} from 'react-icons/io5';
 
 const settingFields = [
   // General Settings
@@ -23,6 +28,16 @@ const settingFields = [
   { key: 'profileImage', label: 'Profile Image', type: 'image', section: 'General',
     description: 'Upload your profile photo (Recommended: Square image, 400x400px or larger)' },
 
+  // Section Visibility
+  { key: 'showHero', label: 'Show Hero Section', type: 'toggle', section: 'Section Visibility' },
+  { key: 'showAbout', label: 'Show About Section', type: 'toggle', section: 'Section Visibility' },
+  { key: 'showSkills', label: 'Show Skills Section', type: 'toggle', section: 'Section Visibility' },
+  { key: 'showProjects', label: 'Show Projects Section', type: 'toggle', section: 'Section Visibility' },
+  { key: 'showExperience', label: 'Show Experience Section', type: 'toggle', section: 'Section Visibility' },
+  { key: 'showServices', label: 'Show Services Section', type: 'toggle', section: 'Section Visibility' },
+  { key: 'showTestimonials', label: 'Show Testimonials Section', type: 'toggle', section: 'Section Visibility' },
+  { key: 'showContact', label: 'Show Contact Section', type: 'toggle', section: 'Section Visibility' },
+
   // About Section
   { key: 'aboutTitle', label: 'About Section Title', type: 'text', section: 'About Section' },
   { key: 'aboutDescription', label: 'About Description (Paragraph 1)', type: 'textarea', section: 'About Section' },
@@ -34,9 +49,38 @@ const settingFields = [
   { key: 'aboutFreelance', label: 'Freelance Status', type: 'text', section: 'About Section' },
   { key: 'careerObjective', label: 'Career Objective', type: 'textarea', section: 'About Section' },
 
-  // Journey Items - Using custom editor
+  // Journey Items
   { key: 'journeyItems', label: 'Journey Items', type: 'journey', section: 'About Section' },
+
+  // Footer Settings
+  { key: 'footerTagline', label: 'Tagline', type: 'text', section: 'Footer',
+    description: 'Short description shown below your name in the footer' },
+  { key: 'footerCopyright', label: 'Copyright Text', type: 'text', section: 'Footer',
+    description: 'Text shown after the year and your name. Example: "All rights reserved."' },
+  { key: 'footerQuickLinks', label: 'Quick Links', type: 'footerLinks', section: 'Footer' },
+  { key: 'footerSocialLinks', label: 'Social Links', type: 'footerSocialLinks', section: 'Footer' },
+  { key: 'footerShowSocialLinks', label: 'Show Social Links', type: 'select', section: 'Footer',
+    options: [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }] },
+  { key: 'footerShowQuickLinks', label: 'Show Quick Links', type: 'select', section: 'Footer',
+    options: [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }] },
+  { key: 'footerShowTagline', label: 'Show Tagline', type: 'select', section: 'Footer',
+    options: [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }] },
+  { key: 'footerShowCopyright', label: 'Show Copyright', type: 'select', section: 'Footer',
+    options: [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }] },
+  { key: 'footerShowBackToTop', label: 'Show Back to Top Button', type: 'select', section: 'Footer',
+    options: [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }] },
 ];
+
+const sectionIcons = {
+  showHero: IoHome,
+  showAbout: IoPerson,
+  showSkills: IoCodeSlash,
+  showProjects: IoFolder,
+  showExperience: IoBriefcase,
+  showServices: IoSettings,
+  showTestimonials: IoPeople,
+  showContact: IoMail,
+};
 
 export default function SettingsPage() {
   const { data: settings, isLoading, refetch } = useSettings();
@@ -50,8 +94,8 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (settings && isInitialLoad.current) {
-      // Parse journey items if it's a string
       const parsedSettings = { ...settings };
+      
       if (typeof parsedSettings.journeyItems === 'string') {
         try {
           parsedSettings.journeyItems = JSON.parse(parsedSettings.journeyItems);
@@ -59,6 +103,37 @@ export default function SettingsPage() {
           parsedSettings.journeyItems = [];
         }
       }
+      
+      if (typeof parsedSettings.footerQuickLinks === 'string') {
+        try {
+          parsedSettings.footerQuickLinks = JSON.parse(parsedSettings.footerQuickLinks);
+        } catch (e) {
+          parsedSettings.footerQuickLinks = [
+            { label: 'Home', href: '#home' },
+            { label: 'About', href: '#about' },
+            { label: 'Skills', href: '#skills' },
+            { label: 'Projects', href: '#projects' },
+            { label: 'Experience', href: '#experience' },
+            { label: 'Services', href: '#services' },
+            { label: 'Testimonials', href: '#testimonials' },
+            { label: 'Contact', href: '#contact' }
+          ];
+        }
+      }
+      
+      if (typeof parsedSettings.footerSocialLinks === 'string') {
+        try {
+          parsedSettings.footerSocialLinks = JSON.parse(parsedSettings.footerSocialLinks);
+        } catch (e) {
+          parsedSettings.footerSocialLinks = [
+            { platform: 'github', url: 'https://github.com/abdulrehman', icon: 'FaGithub' },
+            { platform: 'linkedin', url: 'https://linkedin.com/in/abdulrehman', icon: 'FaLinkedin' },
+            { platform: 'twitter', url: 'https://twitter.com/abdulrehman', icon: 'FaTwitter' },
+            { platform: 'email', url: 'mailto:abdulrehman@example.com', icon: 'FaEnvelope' }
+          ];
+        }
+      }
+      
       setForm(parsedSettings);
       isInitialLoad.current = false;
     }
@@ -72,10 +147,18 @@ export default function SettingsPage() {
       return;
     }
 
-    // Stringify journey items before saving
     const dataToSave = { ...form };
+    
     if (dataToSave.journeyItems) {
       dataToSave.journeyItems = JSON.stringify(dataToSave.journeyItems);
+    }
+    
+    if (dataToSave.footerQuickLinks) {
+      dataToSave.footerQuickLinks = JSON.stringify(dataToSave.footerQuickLinks);
+    }
+    
+    if (dataToSave.footerSocialLinks) {
+      dataToSave.footerSocialLinks = JSON.stringify(dataToSave.footerSocialLinks);
     }
 
     try {
@@ -84,8 +167,8 @@ export default function SettingsPage() {
       
       const freshSettings = await refetch();
       if (freshSettings.data) {
-        // Parse journey items back to array
         const parsedSettings = { ...freshSettings.data };
+        
         if (typeof parsedSettings.journeyItems === 'string') {
           try {
             parsedSettings.journeyItems = JSON.parse(parsedSettings.journeyItems);
@@ -93,6 +176,23 @@ export default function SettingsPage() {
             parsedSettings.journeyItems = [];
           }
         }
+        
+        if (typeof parsedSettings.footerQuickLinks === 'string') {
+          try {
+            parsedSettings.footerQuickLinks = JSON.parse(parsedSettings.footerQuickLinks);
+          } catch (e) {
+            parsedSettings.footerQuickLinks = [];
+          }
+        }
+        
+        if (typeof parsedSettings.footerSocialLinks === 'string') {
+          try {
+            parsedSettings.footerSocialLinks = JSON.parse(parsedSettings.footerSocialLinks);
+          } catch (e) {
+            parsedSettings.footerSocialLinks = [];
+          }
+        }
+        
         setForm(parsedSettings);
         isInitialLoad.current = true;
       }
@@ -136,7 +236,6 @@ export default function SettingsPage() {
     toast.success('Profile image removed');
   };
 
-  // Group fields by section
   const sections = {};
   settingFields.forEach(field => {
     const section = field.section || 'General';
@@ -154,7 +253,6 @@ export default function SettingsPage() {
     <div>
       <h1 className="text-2xl font-bold mb-6">Settings</h1>
       
-      {/* Section Tabs */}
       <div className="flex flex-wrap gap-2 mb-6 overflow-x-auto">
         {sectionNames.map(section => (
           <button
@@ -179,7 +277,46 @@ export default function SettingsPage() {
       >
         <form onSubmit={handleSave} className="glass p-6 rounded-2xl space-y-4">
           {sections[activeSection]?.map(field => {
-            // Special handling for image field
+            // Toggle fields for section visibility
+            if (field.type === 'toggle') {
+              const Icon = sectionIcons[field.key];
+              const isEnabled = form[field.key] !== 'false';
+              return (
+                <div key={field.key} className="border-b border-white/10 pb-4 last:border-0">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {Icon && <Icon className="text-gray-400" size={20} />}
+                      <label className="text-sm text-gray-300">{field.label}</label>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleChange(field.key, isEnabled ? 'false' : 'true')}
+                      className={`relative w-12 h-6 rounded-full transition-all cursor-pointer ${
+                        isEnabled ? 'bg-primary' : 'bg-gray-600'
+                      }`}
+                    >
+                      <div
+                        className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-all ${
+                          isEnabled ? 'right-0.5' : 'left-0.5'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {isEnabled ? (
+                      <span className="text-green-400 flex items-center gap-1">
+                        <IoEye size={12} /> Visible on website
+                      </span>
+                    ) : (
+                      <span className="text-red-400 flex items-center gap-1">
+                        <IoEyeOff size={12} /> Hidden from website
+                      </span>
+                    )}
+                  </p>
+                </div>
+              );
+            }
+
             if (field.type === 'image') {
               return (
                 <div key={field.key} className="border-b border-white/10 pb-4">
@@ -221,7 +358,6 @@ export default function SettingsPage() {
               );
             }
 
-            // Special handling for journey items
             if (field.type === 'journey') {
               return (
                 <div key={field.key} className="border-b border-white/10 pb-4">
@@ -234,7 +370,32 @@ export default function SettingsPage() {
               );
             }
 
-            // Regular text/textarea fields
+            if (field.type === 'footerLinks') {
+              return (
+                <div key={field.key} className="border-b border-white/10 pb-4">
+                  <label className="text-sm text-gray-400 mb-2 block">{field.label}</label>
+                  <FooterSettingsEditor
+                    type="quickLinks"
+                    value={form[field.key] || []}
+                    onChange={(value) => handleChange(field.key, value)}
+                  />
+                </div>
+              );
+            }
+
+            if (field.type === 'footerSocialLinks') {
+              return (
+                <div key={field.key} className="border-b border-white/10 pb-4">
+                  <label className="text-sm text-gray-400 mb-2 block">{field.label}</label>
+                  <FooterSettingsEditor
+                    type="socialLinks"
+                    value={form[field.key] || []}
+                    onChange={(value) => handleChange(field.key, value)}
+                  />
+                </div>
+              );
+            }
+
             return (
               <div key={field.key} className="border-b border-white/10 pb-4 last:border-0">
                 <label className="text-sm text-gray-400 mb-1 block">{field.label}</label>
@@ -245,6 +406,16 @@ export default function SettingsPage() {
                     rows={3} 
                     className="w-full px-3 py-2 glass rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" 
                   />
+                ) : field.type === 'select' ? (
+                  <select
+                    value={form[field.key] || ''}
+                    onChange={e => handleChange(field.key, e.target.value)}
+                    className="w-full px-3 py-2 glass rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  >
+                    {field.options?.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
                 ) : (
                   <input 
                     type="text" 
@@ -271,7 +442,6 @@ export default function SettingsPage() {
         </form>
       </motion.div>
 
-      {/* Crop Modal */}
       <ImageCropModal
         isOpen={showCropModal}
         onClose={() => {

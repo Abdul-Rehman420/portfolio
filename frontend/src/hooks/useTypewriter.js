@@ -1,27 +1,73 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 
-export const useTypewriter = (texts, typingSpeed = 100, deletingSpeed = 50, pauseTime = 2000) => {
-  const [display, setDisplay] = useState('');
-  const [textIndex, setTextIndex] = useState(0);
-  const [charIndex, setCharIndex] = useState(0);
-  const [isDeleting, setIsDeleting] = useState(false);
+export const useTypewriter = (
+  texts = [],
+  typingSpeed = 60,
+  deletingSpeed = 30,
+  pauseTime = 1200
+) => {
+  const [state, setState] = useState({
+    display: '',
+    index: 0,
+    isDeleting: false,
+  });
 
   useEffect(() => {
-    const currentText = texts[textIndex];
-    let timeout;
-    if (!isDeleting && charIndex < currentText.length) {
-      timeout = setTimeout(() => { setDisplay(currentText.slice(0, charIndex + 1)); setCharIndex(p => p + 1); }, typingSpeed);
-    } else if (!isDeleting && charIndex === currentText.length) {
-      timeout = setTimeout(() => setIsDeleting(true), pauseTime);
-    } else if (isDeleting && charIndex > 0) {
-      timeout = setTimeout(() => { setDisplay(currentText.slice(0, charIndex - 1)); setCharIndex(p => p - 1); }, deletingSpeed);
-    } else if (isDeleting && charIndex === 0) {
-      setIsDeleting(false);
-      setTextIndex(p => (p + 1) % texts.length);
-    }
-    return () => clearTimeout(timeout);
-  }, [charIndex, isDeleting, textIndex, texts, typingSpeed, deletingSpeed, pauseTime]);
+    if (!texts.length) return;
 
-  return display;
+    const currentText = texts[state.index % texts.length];
+
+    let timeoutId;
+
+    if (!state.isDeleting) {
+      // Typing
+      if (state.display.length < currentText.length) {
+        timeoutId = setTimeout(() => {
+          setState((prev) => ({
+            ...prev,
+            display: currentText.slice(0, prev.display.length + 1),
+          }));
+        }, typingSpeed);
+      } else {
+        // Pause before deleting
+        timeoutId = setTimeout(() => {
+          setState((prev) => ({
+            ...prev,
+            isDeleting: true,
+          }));
+        }, pauseTime);
+      }
+    } else {
+      // Deleting
+      if (state.display.length > 0) {
+        timeoutId = setTimeout(() => {
+          setState((prev) => ({
+            ...prev,
+            display: currentText.slice(0, prev.display.length - 1),
+          }));
+        }, deletingSpeed);
+      } else {
+        // Move to next text
+        timeoutId = setTimeout(() => {
+          setState((prev) => ({
+            display: '',
+            isDeleting: false,
+            index: (prev.index + 1) % texts.length,
+          }));
+        }, 100);
+      }
+    }
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    state,
+    texts,
+    typingSpeed,
+    deletingSpeed,
+    pauseTime,
+  ]);
+
+  return state.display;
 };

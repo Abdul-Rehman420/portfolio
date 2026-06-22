@@ -1,3 +1,4 @@
+// frontend/src/components/sections/Hero.js
 'use client';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
@@ -22,7 +23,8 @@ const Hero = () => {
   const rolesString = settings?.typewriterRoles || 'MERN Stack Developer,Frontend Developer,React Developer,JavaScript Developer,UI Developer';
   const roles = rolesString.split(',').map(role => role.trim()).filter(role => role);
   
-  const typedText = useTypewriter(roles);
+  // Use faster typing speeds: 60ms typing, 30ms deleting, 1200ms pause
+  const typedText = useTypewriter(roles, 60, 30, 1200);
   
   const s = settings || {};
   const socialLinks = links || [];
@@ -30,7 +32,7 @@ const Hero = () => {
 
   return (
     <section id="home" className="relative min-h-screen flex items-center overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/10" />
+      <div className="absolute inset-0 bg-linear-to-br from-primary/10 via-transparent to-secondary/10" />
       <div className="absolute inset-0">
         <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-blob" />
         <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-blob" style={{ animationDelay: '2s' }} />
@@ -77,11 +79,9 @@ const Hero = () => {
 
           <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.3 }} className="relative flex justify-center">
             <div className="relative w-72 h-72 sm:w-80 sm:h-80 lg:w-96 lg:h-96">
-              {/* Animated gradient ring */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary via-secondary to-accent rounded-full animate-spin-slow opacity-30 blur-2xl" />
-              <div className="absolute inset-4 bg-gradient-to-br from-primary via-secondary to-accent rounded-full animate-spin-slow opacity-40" style={{ animationDirection: 'reverse' }} />
+              <div className="absolute inset-0 bg-linear-to-br from-primary via-secondary to-accent rounded-full animate-spin-slow opacity-30 blur-2xl" />
+              <div className="absolute inset-4 bg-linear-to-br from-primary via-secondary to-accent rounded-full animate-spin-slow opacity-40" style={{ animationDirection: 'reverse' }} />
               
-              {/* Profile Image Container - Always circular */}
               <div className="absolute inset-8 rounded-full overflow-hidden border-2 border-white/10 shadow-2xl shadow-primary/20 bg-dark-card">
                 {profileImage ? (
                   <div className="relative w-full h-full">

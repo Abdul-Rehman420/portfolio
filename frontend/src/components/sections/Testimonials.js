@@ -29,7 +29,7 @@ const Testimonials = () => {
             <AnimatePresence mode="wait" custom={dir}>
               <motion.div key={current} custom={dir} variants={variants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}
                 className="glass p-8 md:p-10 rounded-2xl text-center">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary via-secondary to-accent p-0.5 mx-auto mb-4">
+                <div className="w-20 h-20 rounded-full bg-linear-to-br from-primary via-secondary to-accent p-0.5 mx-auto mb-4">
                   <div className="w-full h-full rounded-full bg-dark-bg flex items-center justify-center">
                     {t.image ? <img src={t.image} alt={t.name} className="w-full h-full rounded-full object-cover" /> : <span className="text-2xl font-bold gradient-text">{t.name?.[0]}</span>}
                   </div>

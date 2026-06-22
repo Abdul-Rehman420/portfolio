@@ -1,27 +1,43 @@
+// frontend/src/components/Navbar.js
 'use client';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiMenu, HiX } from 'react-icons/hi';
 import { IoMoon, IoSunny } from 'react-icons/io5';
 import { useTheme } from '@/context/ThemeContext';
+import { useSettings } from '@/hooks/useApi';
 
-const navLinks = [
-  { name: 'Home', href: '#home' }, { name: 'About', href: '#about' },
-  { name: 'Skills', href: '#skills' }, { name: 'Projects', href: '#projects' },
-  { name: 'Experience', href: '#experience' }, { name: 'Services', href: '#services' },
-  { name: 'Testimonials', href: '#testimonials' }, { name: 'Contact', href: '#contact' },
+// Define all possible nav links with their visibility keys
+const allNavLinks = [
+  { name: 'Home', href: '#home', visibilityKey: 'showHero' },
+  { name: 'About', href: '#about', visibilityKey: 'showAbout' },
+  { name: 'Skills', href: '#skills', visibilityKey: 'showSkills' },
+  { name: 'Projects', href: '#projects', visibilityKey: 'showProjects' },
+  { name: 'Experience', href: '#experience', visibilityKey: 'showExperience' },
+  { name: 'Services', href: '#services', visibilityKey: 'showServices' },
+  { name: 'Testimonials', href: '#testimonials', visibilityKey: 'showTestimonials' },
+  { name: 'Contact', href: '#contact', visibilityKey: 'showContact' },
 ];
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { data: settings } = useSettings();
+  const s = settings || {};
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Filter nav links based on visibility settings
+  const navLinks = allNavLinks.filter(link => {
+    const isVisible = s[link.visibilityKey];
+    // If the setting doesn't exist, default to true (visible)
+    return isVisible !== 'false';
+  });
 
   const handleClick = (href) => {
     setMobileOpen(false);
@@ -36,19 +52,25 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16 lg:h-20">
           <a href="#home" onClick={(e) => { e.preventDefault(); handleClick('home'); }}
             className="text-2xl font-bold gradient-text cursor-pointer">Abdul Rehman</a>
+          
           <div className="hidden lg:flex items-center gap-1">
             {navLinks.map(l => (
               <a key={l.name} href={l.href} onClick={(e) => { e.preventDefault(); handleClick(l.href.slice(1)); }}
                 className="px-3 py-2 text-sm font-medium text-gray-300 hover:text-primary transition-colors rounded-lg hover:bg-white/5">{l.name}</a>
             ))}
           </div>
+          
           <div className="flex items-center gap-2">
             <button onClick={toggleTheme} aria-label="Toggle theme"
               className="p-2 rounded-lg text-gray-300 hover:text-primary hover:bg-white/5 transition-all cursor-pointer">
               {theme === 'dark' ? <IoSunny size={20} /> : <IoMoon size={20} />}
             </button>
-            <a href="#contact" onClick={(e) => { e.preventDefault(); handleClick('contact'); }}
-              className="hidden sm:inline-flex px-5 py-2 bg-primary text-white rounded-full text-sm font-medium hover:bg-primary/90 transition-all shadow-lg shadow-primary/30">Hire Me</a>
+            
+            {s.showContact !== 'false' && (
+              <a href="#contact" onClick={(e) => { e.preventDefault(); handleClick('contact'); }}
+                className="hidden sm:inline-flex px-5 py-2 bg-primary text-white rounded-full text-sm font-medium hover:bg-primary/90 transition-all shadow-lg shadow-primary/30">Hire Me</a>
+            )}
+            
             <button onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle menu"
               className="lg:hidden p-2 rounded-lg text-gray-300 hover:text-primary hover:bg-white/5 transition-all cursor-pointer">
               {mobileOpen ? <HiX size={24} /> : <HiMenu size={24} />}
@@ -56,6 +78,7 @@ const Navbar = () => {
           </div>
         </div>
       </div>
+      
       <AnimatePresence>
         {mobileOpen && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
@@ -65,8 +88,10 @@ const Navbar = () => {
                 <a key={l.name} href={l.href} onClick={(e) => { e.preventDefault(); handleClick(l.href.slice(1)); }}
                   className="block px-4 py-3 text-gray-300 hover:text-primary hover:bg-white/5 rounded-lg transition-all">{l.name}</a>
               ))}
-              <a href="#contact" onClick={(e) => { e.preventDefault(); handleClick('contact'); }}
-                className="block px-4 py-3 bg-primary text-white rounded-lg text-center font-medium">Hire Me</a>
+              {s.showContact !== 'false' && (
+                <a href="#contact" onClick={(e) => { e.preventDefault(); handleClick('contact'); }}
+                  className="block px-4 py-3 bg-primary text-white rounded-lg text-center font-medium">Hire Me</a>
+              )}
             </div>
           </motion.div>
         )}
