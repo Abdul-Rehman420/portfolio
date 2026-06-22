@@ -1,3 +1,4 @@
+// frontend/src/app/admin/settings/page.js
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
@@ -6,19 +7,35 @@ import { useSettings, useSettingsMutation } from '@/hooks/useApi';
 import { uploadImage } from '@/lib/api';
 import Image from 'next/image';
 import ImageCropModal from '@/components/admin/ImageCropModal';
+import JourneyItemsEditor from '@/components/admin/JourneyItemsEditor';
 
 const settingFields = [
-  { key: 'siteName', label: 'Site Name', type: 'text' },
-  { key: 'siteRole', label: 'Role/Title', type: 'text' },
-  { key: 'siteDescription', label: 'Description', type: 'textarea' },
-  { key: 'location', label: 'Location', type: 'text' },
-  { key: 'email', label: 'Email', type: 'text' },
-  { key: 'phone', label: 'Phone', type: 'text' },
-  { key: 'resumeUrl', label: 'Resume URL', type: 'text' },
-  { key: 'typewriterRoles', label: 'Typewriter Roles (comma separated)', type: 'text', 
+  // General Settings
+  { key: 'siteName', label: 'Site Name', type: 'text', section: 'General' },
+  { key: 'siteRole', label: 'Role/Title', type: 'text', section: 'General' },
+  { key: 'siteDescription', label: 'Description', type: 'textarea', section: 'General' },
+  { key: 'location', label: 'Location', type: 'text', section: 'General' },
+  { key: 'email', label: 'Email', type: 'text', section: 'General' },
+  { key: 'phone', label: 'Phone', type: 'text', section: 'General' },
+  { key: 'resumeUrl', label: 'Resume URL', type: 'text', section: 'General' },
+  { key: 'typewriterRoles', label: 'Typewriter Roles (comma separated)', type: 'text', section: 'General',
     description: 'Enter roles separated by commas. Example: MERN Stack Developer,Frontend Developer,React Developer' },
-  { key: 'profileImage', label: 'Profile Image', type: 'image',
+  { key: 'profileImage', label: 'Profile Image', type: 'image', section: 'General',
     description: 'Upload your profile photo (Recommended: Square image, 400x400px or larger)' },
+
+  // About Section
+  { key: 'aboutTitle', label: 'About Section Title', type: 'text', section: 'About Section' },
+  { key: 'aboutDescription', label: 'About Description (Paragraph 1)', type: 'textarea', section: 'About Section' },
+  { key: 'aboutDescription2', label: 'About Description (Paragraph 2)', type: 'textarea', section: 'About Section' },
+  { key: 'aboutLocation', label: 'Location', type: 'text', section: 'About Section' },
+  { key: 'aboutExperience', label: 'Experience Level', type: 'text', section: 'About Section' },
+  { key: 'aboutLanguages', label: 'Languages', type: 'text', section: 'About Section' },
+  { key: 'aboutAvailability', label: 'Availability', type: 'text', section: 'About Section' },
+  { key: 'aboutFreelance', label: 'Freelance Status', type: 'text', section: 'About Section' },
+  { key: 'careerObjective', label: 'Career Objective', type: 'textarea', section: 'About Section' },
+
+  // Journey Items - Using custom editor
+  { key: 'journeyItems', label: 'Journey Items', type: 'journey', section: 'About Section' },
 ];
 
 export default function SettingsPage() {
@@ -28,11 +45,21 @@ export default function SettingsPage() {
   const [uploading, setUploading] = useState(false);
   const [showCropModal, setShowCropModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [activeSection, setActiveSection] = useState('General');
   const isInitialLoad = useRef(true);
 
   useEffect(() => {
     if (settings && isInitialLoad.current) {
-      setForm(settings);
+      // Parse journey items if it's a string
+      const parsedSettings = { ...settings };
+      if (typeof parsedSettings.journeyItems === 'string') {
+        try {
+          parsedSettings.journeyItems = JSON.parse(parsedSettings.journeyItems);
+        } catch (e) {
+          parsedSettings.journeyItems = [];
+        }
+      }
+      setForm(parsedSettings);
       isInitialLoad.current = false;
     }
   }, [settings]);
@@ -45,13 +72,28 @@ export default function SettingsPage() {
       return;
     }
 
+    // Stringify journey items before saving
+    const dataToSave = { ...form };
+    if (dataToSave.journeyItems) {
+      dataToSave.journeyItems = JSON.stringify(dataToSave.journeyItems);
+    }
+
     try {
-      await mutation.mutateAsync(form);
+      await mutation.mutateAsync(dataToSave);
       toast.success('Settings updated successfully!');
       
       const freshSettings = await refetch();
       if (freshSettings.data) {
-        setForm(freshSettings.data);
+        // Parse journey items back to array
+        const parsedSettings = { ...freshSettings.data };
+        if (typeof parsedSettings.journeyItems === 'string') {
+          try {
+            parsedSettings.journeyItems = JSON.parse(parsedSettings.journeyItems);
+          } catch (e) {
+            parsedSettings.journeyItems = [];
+          }
+        }
+        setForm(parsedSettings);
         isInitialLoad.current = true;
       }
     } catch (err) {
@@ -69,11 +111,8 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Show crop modal with the selected file
     setSelectedFile(file);
     setShowCropModal(true);
-    
-    // Reset the input so the same file can be selected again
     e.target.value = '';
   };
 
@@ -97,6 +136,16 @@ export default function SettingsPage() {
     toast.success('Profile image removed');
   };
 
+  // Group fields by section
+  const sections = {};
+  settingFields.forEach(field => {
+    const section = field.section || 'General';
+    if (!sections[section]) sections[section] = [];
+    sections[section].push(field);
+  });
+
+  const sectionNames = Object.keys(sections);
+
   if (isLoading) {
     return <div className="text-center py-12 text-gray-400">Loading settings...</div>;
   }
@@ -104,16 +153,38 @@ export default function SettingsPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Settings</h1>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl">
+      
+      {/* Section Tabs */}
+      <div className="flex flex-wrap gap-2 mb-6 overflow-x-auto">
+        {sectionNames.map(section => (
+          <button
+            key={section}
+            onClick={() => setActiveSection(section)}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+              activeSection === section 
+                ? 'bg-primary text-white' 
+                : 'glass text-gray-400 hover:text-white'
+            }`}
+          >
+            {section}
+          </button>
+        ))}
+      </div>
+
+      <motion.div 
+        key={activeSection}
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        className="max-w-2xl"
+      >
         <form onSubmit={handleSave} className="glass p-6 rounded-2xl space-y-4">
-          {settingFields.map(field => {
+          {sections[activeSection]?.map(field => {
             // Special handling for image field
             if (field.type === 'image') {
               return (
                 <div key={field.key} className="border-b border-white/10 pb-4">
                   <label className="text-sm text-gray-400 mb-2 block">{field.label}</label>
                   
-                  {/* Preview current image */}
                   {form[field.key] && (
                     <div className="relative w-32 h-32 rounded-full overflow-hidden mb-3 border-2 border-primary/30">
                       <Image 
@@ -150,9 +221,22 @@ export default function SettingsPage() {
               );
             }
 
+            // Special handling for journey items
+            if (field.type === 'journey') {
+              return (
+                <div key={field.key} className="border-b border-white/10 pb-4">
+                  <label className="text-sm text-gray-400 mb-2 block">{field.label}</label>
+                  <JourneyItemsEditor
+                    value={form[field.key] || []}
+                    onChange={(value) => handleChange(field.key, value)}
+                  />
+                </div>
+              );
+            }
+
             // Regular text/textarea fields
             return (
-              <div key={field.key}>
+              <div key={field.key} className="border-b border-white/10 pb-4 last:border-0">
                 <label className="text-sm text-gray-400 mb-1 block">{field.label}</label>
                 {field.type === 'textarea' ? (
                   <textarea 
