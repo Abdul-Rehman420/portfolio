@@ -42,7 +42,8 @@ app.use('/api/certifications', require('./routes/certifications'));
 app.use('/api/social-links', require('./routes/socialLinks'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/upload', require('./routes/upload'));
-app.use('/api/contact', require('./routes/contact')); // Add this line
+app.use('/api/contact', require('./routes/contact'));
+app.use('/api/categories', require('./routes/categories')); // Add this line
 
 app.use(errorHandler);
 

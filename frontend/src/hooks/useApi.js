@@ -1,7 +1,18 @@
 // frontend/src/hooks/useApi.js
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchAll, fetchById, createItem, updateItem, deleteItem } from '@/lib/api';
+import { 
+  fetchAll, 
+  fetchById, 
+  createItem, 
+  updateItem, 
+  deleteItem,
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  toggleCategoryVisibility
+} from '@/lib/api';
 import api from '@/lib/api';
 
 const useGenericQuery = (key, endpoint, params = {}) =>
@@ -93,4 +104,40 @@ export const useSettingsMutation = () => {
       console.error('Settings mutation error:', error);
     },
   });
+};
+
+// Category hooks
+export const useCategories = (includeHidden = false) => 
+  useQuery({ 
+    queryKey: ['categories', includeHidden], 
+    queryFn: () => getCategories(includeHidden),
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+  });
+
+export const useCategoryMutations = () => {
+  const qc = useQueryClient();
+  
+  const create = useMutation({
+    mutationFn: (data) => createCategory(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+  });
+  
+  const update = useMutation({
+    mutationFn: ({ id, ...data }) => updateCategory(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+  });
+  
+  const remove = useMutation({
+    mutationFn: (id) => deleteCategory(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+  });
+  
+  const toggleVisibility = useMutation({
+    mutationFn: ({ id, isHidden }) => toggleCategoryVisibility(id, isHidden),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+  });
+  
+  return { create, update, remove, toggleVisibility };
 };

@@ -4,11 +4,16 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { IoGrid, IoCodeSlash, IoBarChart, IoServer, IoPeople, IoBriefcase, IoBook, IoRibbon, IoLink, IoSettings, IoLogOut, IoMenu, IoClose, IoArrowBack } from 'react-icons/io5';
+import { 
+  IoGrid, IoCodeSlash, IoBarChart, IoServer, IoPeople, 
+  IoBriefcase, IoBook, IoRibbon, IoLink, IoSettings, 
+  IoLogOut, IoMenu, IoClose, IoArrowBack, IoFolder 
+} from 'react-icons/io5';
 
 const sidebarItems = [
   { label: 'Dashboard', href: '/admin', icon: IoGrid },
   { label: 'Projects', href: '/admin/projects', icon: IoCodeSlash },
+  { label: 'Categories', href: '/admin/categories', icon: IoFolder },
   { label: 'Skills', href: '/admin/skills', icon: IoBarChart },
   { label: 'Services', href: '/admin/services', icon: IoServer },
   { label: 'Testimonials', href: '/admin/testimonials', icon: IoPeople },

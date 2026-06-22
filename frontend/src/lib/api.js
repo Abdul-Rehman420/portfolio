@@ -72,6 +72,25 @@ export const createItem = (endpoint, data) => api.post(`/${endpoint}`, data).the
 export const updateItem = (endpoint, id, data) => api.put(`/${endpoint}/${id}`, data).then(r => r.data);
 export const deleteItem = (endpoint, id) => api.delete(`/${endpoint}/${id}`).then(r => r.data);
 
+// Category CRUD
+export const getCategories = (includeHidden = false) => 
+  api.get(`/categories${includeHidden ? '?includeHidden=true' : ''}`).then(r => r.data);
+
+export const getCategory = (id) => 
+  api.get(`/categories/${id}`).then(r => r.data);
+
+export const createCategory = (data) => 
+  api.post('/categories', data).then(r => r.data);
+
+export const updateCategory = (id, data) => 
+  api.put(`/categories/${id}`, data).then(r => r.data);
+
+export const deleteCategory = (id) => 
+  api.delete(`/categories/${id}`).then(r => r.data);
+
+export const toggleCategoryVisibility = (id, isHidden) => 
+  api.patch(`/categories/${id}/toggle-visibility`, { isHidden }).then(r => r.data);
+
 // Upload with retry logic and progress tracking
 export const uploadImage = async (file, retries = 3) => {
   const fd = new FormData();

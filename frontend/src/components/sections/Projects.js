@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoSearch, IoClose, IoGlobe, IoLogoGithub, IoDocumentText, IoChevronBack, IoChevronForward } from 'react-icons/io5';
-import { useProjects } from '@/hooks/useApi';
+import { useProjects, useCategories } from '@/hooks/useApi';
 import Image from 'next/image';
 
 // Image Slider Component with Next.js Image
@@ -129,11 +129,13 @@ const Projects = () => {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
   const { data: projects = [] } = useProjects();
+  const { data: categories = [] } = useCategories(false); // Only get visible categories
 
-  const filters = ['all', 'React', 'Next.js', 'Node.js', 'Full Stack', 'Frontend'];
+  // Build filter options from categories
+  const filters = ['all', ...categories.map(c => c.name)];
 
   const filtered = projects.filter(p => {
-    const cat = filter === 'all' || p.category === filter || p.technologies?.includes(filter);
+    const cat = filter === 'all' || p.category === filter;
     const q = search.toLowerCase();
     const match = p.title?.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q);
     return cat && match;
@@ -220,7 +222,7 @@ const Projects = () => {
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <span>{p.date}</span>
-                    <span className="text-primary">{p.role}</span>
+                    <span className="text-primary">{p.category || p.role}</span>
                   </div>
                 </div>
               </motion.div>
@@ -251,7 +253,14 @@ const Projects = () => {
               className="glass rounded-2xl max-w-6xl w-full max-h-[95vh] overflow-y-auto"
             >
               <div className="sticky top-0 z-10 bg-dark-card/90 backdrop-blur-sm p-4 border-b border-white/10 flex justify-between items-start">
-                <h3 className="text-2xl font-bold gradient-text">{selected.title}</h3>
+                <div>
+                  <h3 className="text-2xl font-bold gradient-text">{selected.title}</h3>
+                  {selected.category && (
+                    <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                      {selected.category}
+                    </span>
+                  )}
+                </div>
                 <button
                   onClick={() => setSelected(null)}
                   className="p-1 hover:bg-white/10 rounded-lg transition-all cursor-pointer"
