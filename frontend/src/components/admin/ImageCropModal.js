@@ -39,6 +39,7 @@ export default function ImageCropModal({
   // Reset crop when modal opens with new image
   useEffect(() => {
     if (isOpen && imageFile) {
+      // Use a timeout to avoid the set-state-in-effect warning
       const timer = setTimeout(() => {
         setCrop(undefined);
         setCompletedCrop(null);
@@ -59,6 +60,7 @@ export default function ImageCropModal({
     const { width, height } = e.currentTarget;
     setImageLoaded(true);
     
+    // Set initial crop only once
     if (isFirstLoad) {
       const initialCrop = centerAspectCrop(width, height, 1);
       setCrop(initialCrop);
@@ -81,13 +83,6 @@ export default function ImageCropModal({
 
     try {
       const image = imgRef.current;
-      
-      console.log('=== CROP DEBUG INFO ===');
-      console.log('Image natural size:', image.naturalWidth, 'x', image.naturalHeight);
-      console.log('Image display size:', image.width, 'x', image.height);
-      console.log('Completed crop:', completedCrop);
-      console.log('Rotation:', rotation);
-      
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
@@ -99,9 +94,6 @@ export default function ImageCropModal({
       const cropX = completedCrop.x * scaleX;
       const cropY = completedCrop.y * scaleY;
 
-      console.log('Crop in pixels:', { cropX, cropY, cropWidth, cropHeight });
-      console.log('Scale factors:', { scaleX, scaleY });
-
       const rad = (rotation * Math.PI) / 180;
       const isRotated = rotation % 180 !== 0;
       
@@ -110,8 +102,6 @@ export default function ImageCropModal({
       
       canvas.width = Math.round(width);
       canvas.height = Math.round(height);
-
-      console.log('Canvas size:', canvas.width, 'x', canvas.height);
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
@@ -136,8 +126,6 @@ export default function ImageCropModal({
 
       ctx.restore();
 
-      console.log('Canvas created with size:', canvas.width, 'x', canvas.height);
-
       const blob = await new Promise((resolve) => {
         canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.95);
       });
@@ -146,15 +134,12 @@ export default function ImageCropModal({
         throw new Error('Failed to create image blob');
       }
 
-      console.log('Blob size:', blob.size, 'bytes');
-
       const croppedFile = new File([blob], `cropped_${Date.now()}.jpg`, {
         type: 'image/jpeg',
         lastModified: Date.now(),
       });
 
-      console.log('Cropped file created:', croppedFile.name, croppedFile.size, 'bytes');
-
+      // Clean up
       URL.revokeObjectURL(imageUrl);
       
       onCropComplete(croppedFile);

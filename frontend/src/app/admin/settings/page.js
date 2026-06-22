@@ -69,30 +69,20 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     
+    // Show crop modal with the selected file
     setSelectedFile(file);
     setShowCropModal(true);
+    
+    // Reset the input so the same file can be selected again
     e.target.value = '';
   };
 
   const handleCropComplete = async (croppedFile) => {
     setUploading(true);
     try {
-      console.log('Cropped file received:', croppedFile);
-      console.log('File size:', croppedFile.size);
-      console.log('File type:', croppedFile.type);
-      
       const result = await uploadImage(croppedFile);
-      console.log('Upload result:', result);
-      console.log('Image URL:', result.url);
-      
       handleChange('profileImage', result.url);
-      toast.success('Profile image uploaded and cropped successfully!');
-      
-      const freshSettings = await refetch();
-      if (freshSettings.data) {
-        console.log('Fresh settings:', freshSettings.data);
-        setForm(prev => ({ ...prev, profileImage: freshSettings.data.profileImage }));
-      }
+      toast.success('Profile image uploaded successfully!');
     } catch (error) {
       console.error('Upload error:', error);
       toast.error(error.message || 'Upload failed');
@@ -113,15 +103,17 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6 text-white">Settings</h1>
+      <h1 className="text-2xl font-bold mb-6">Settings</h1>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl">
-        <form onSubmit={handleSave} className="bg-dark-card p-6 rounded-2xl border border-white/10 space-y-4">
+        <form onSubmit={handleSave} className="glass p-6 rounded-2xl space-y-4">
           {settingFields.map(field => {
+            // Special handling for image field
             if (field.type === 'image') {
               return (
                 <div key={field.key} className="border-b border-white/10 pb-4">
                   <label className="text-sm text-gray-400 mb-2 block">{field.label}</label>
                   
+                  {/* Preview current image */}
                   {form[field.key] && (
                     <div className="relative w-32 h-32 rounded-full overflow-hidden mb-3 border-2 border-primary/30">
                       <Image 
@@ -130,10 +122,6 @@ export default function SettingsPage() {
                         fill
                         className="object-cover"
                         unoptimized={form[field.key].startsWith('http')}
-                        onError={(e) => {
-                          console.error('Image failed to load:', form[field.key]);
-                          e.target.src = '';
-                        }}
                       />
                       <button
                         type="button"
@@ -162,6 +150,7 @@ export default function SettingsPage() {
               );
             }
 
+            // Regular text/textarea fields
             return (
               <div key={field.key}>
                 <label className="text-sm text-gray-400 mb-1 block">{field.label}</label>
@@ -170,14 +159,14 @@ export default function SettingsPage() {
                     value={form[field.key] || ''} 
                     onChange={e => handleChange(field.key, e.target.value)}
                     rows={3} 
-                    className="w-full px-3 py-2 bg-white/5 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" 
+                    className="w-full px-3 py-2 glass rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" 
                   />
                 ) : (
                   <input 
                     type="text" 
                     value={form[field.key] || ''} 
                     onChange={e => handleChange(field.key, e.target.value)}
-                    className="w-full px-3 py-2 bg-white/5 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50" 
+                    className="w-full px-3 py-2 glass rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" 
                     placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
                   />
                 )}
@@ -198,6 +187,7 @@ export default function SettingsPage() {
         </form>
       </motion.div>
 
+      {/* Crop Modal */}
       <ImageCropModal
         isOpen={showCropModal}
         onClose={() => {
