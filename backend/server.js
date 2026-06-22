@@ -23,11 +23,10 @@ app.use(helmet());
 app.use(cors({ origin: process.env.FRONTEND_URL || '*', credentials: true }));
 app.use(morgan('dev'));
 
-// Increase payload size limit and timeout
+// Increase payload size limit
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Increase timeout for large uploads
 app.use('/api/', limiter);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
@@ -43,6 +42,7 @@ app.use('/api/certifications', require('./routes/certifications'));
 app.use('/api/social-links', require('./routes/socialLinks'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/upload', require('./routes/upload'));
+app.use('/api/contact', require('./routes/contact')); // Add this line
 
 app.use(errorHandler);
 
