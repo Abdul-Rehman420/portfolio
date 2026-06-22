@@ -62,6 +62,9 @@ api.interceptors.response.use(
 export const loginAdmin = (data) => api.post('/auth/login', data).then(r => r.data);
 export const verifyToken = () => api.get('/auth/verify').then(r => r.data);
 
+// Contact
+export const sendContactMessage = (data) => api.post('/contact', data).then(r => r.data);
+
 // Generic CRUD helpers
 export const fetchAll = (endpoint) => api.get(`/${endpoint}`).then(r => r.data);
 export const fetchById = (endpoint, id) => api.get(`/${endpoint}/${id}`).then(r => r.data);
