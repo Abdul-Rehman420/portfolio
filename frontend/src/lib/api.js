@@ -8,7 +8,7 @@ const api = axios.create({
   headers: { 
     'Content-Type': 'application/json',
   },
-  timeout: 120000, // Increase timeout to 120 seconds (2 minutes)
+  timeout: 120000,
 });
 
 // Request interceptor to add token
@@ -34,11 +34,8 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
       console.error('API Error Response:', error.response.status, error.response.data);
       
-      // Handle 401 Unauthorized
       if (error.response.status === 401 && typeof window !== 'undefined') {
         const isAdminRoute = window.location.pathname.startsWith('/admin');
         if (isAdminRoute && !window.location.pathname.includes('/login')) {
@@ -47,11 +44,9 @@ api.interceptors.response.use(
         }
       }
     } else if (error.request) {
-      // The request was made but no response was received
       console.error('API No Response:', error.request);
       error.message = 'No response from server. Please check your network connection.';
     } else {
-      // Something happened in setting up the request that triggered an Error
       console.error('API Request Error:', error.message);
     }
     return Promise.reject(error);
@@ -69,7 +64,23 @@ export const createItem = (endpoint, data) => api.post(`/${endpoint}`, data).the
 export const updateItem = (endpoint, id, data) => api.put(`/${endpoint}/${id}`, data).then(r => r.data);
 export const deleteItem = (endpoint, id) => api.delete(`/${endpoint}/${id}`).then(r => r.data);
 
-// Upload with retry logic and progress tracking
+// Contact - Send message
+export const sendContactMessage = (data) => api.post('/contact', data).then(r => r.data);
+
+// Helper function to get image URL with cache busting
+export const getImageUrl = (url) => {
+  if (!url) return url;
+  // If it's a Cloudinary URL, add a cache-busting parameter
+  if (url.includes('cloudinary.com') || url.includes('res.cloudinary.com')) {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}_t=${Date.now()}`;
+  }
+  // For other URLs, add a timestamp parameter
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}t=${Date.now()}`;
+};
+
+// Upload with retry logic
 export const uploadImage = async (file, retries = 3) => {
   const fd = new FormData();
   fd.append('image', file);
@@ -77,50 +88,60 @@ export const uploadImage = async (file, retries = 3) => {
   let lastError;
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      // Create a separate axios instance with longer timeout for uploads
       const uploadApi = axios.create({
         baseURL: API_BASE,
-        timeout: 180000, // 3 minutes for uploads
+        timeout: 180000,
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       
-      // Add auth token
       if (typeof window !== 'undefined') {
         const token = localStorage.getItem('admin_token');
         if (token) {
           uploadApi.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        } else {
+          throw new Error('You must be logged in to upload images');
         }
       }
       
+      console.log(`Uploading file: ${file.name}, Size: ${(file.size / 1024).toFixed(2)} KB, Type: ${file.type}`);
+      
       const response = await uploadApi.post('/upload', fd);
+      console.log('Upload successful:', response.data);
+      
+      // Return the URL with cache busting already applied
+      if (response.data && response.data.url) {
+        response.data.url = getImageUrl(response.data.url);
+      }
       return response.data;
     } catch (error) {
       lastError = error;
       console.log(`Upload attempt ${attempt}/${retries} failed:`, error.message);
       
-      // Don't retry if it's a client error (4xx) except for timeout (408)
+      if (error.response) {
+        console.error('Server responded with:', error.response.status, error.response.data);
+      } else if (error.request) {
+        console.error('No response received. Check if backend is running at', API_BASE);
+      }
+      
       if (error.response && error.response.status >= 400 && error.response.status < 500 && error.response.status !== 408) {
         break;
       }
       
-      // Don't retry if it's a network error and we've reached the last attempt
       if (attempt === retries) {
         break;
       }
       
-      // Wait before retrying (exponential backoff)
       const delay = Math.pow(2, attempt) * 1000;
       console.log(`Retrying in ${delay}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
   
-  // Throw the last error with a meaningful message
   if (lastError) {
     if (lastError.response) {
       throw new Error(lastError.response.data?.message || `Server error: ${lastError.response.status}`);
     } else if (lastError.request) {
-      throw new Error('No response from server. Please check your network connection.');
+      throw new Error('Cannot connect to server. Please make sure the backend is running on port 5000.');
     } else {
       throw new Error(lastError.message || 'Upload failed');
     }

@@ -269,7 +269,7 @@ const seed = async () => {
     ]);
     console.log('Social links seeded');
 
-    // Settings
+    // Settings - Added profileImage
     await Settings.create([
       { key: 'siteName', value: 'Abdul Rehman' },
       { key: 'siteRole', value: 'Full Stack Web Developer' },
@@ -278,12 +278,18 @@ const seed = async () => {
       { key: 'email', value: 'abdulrehman@example.com' },
       { key: 'phone', value: '+92 300 1234567' },
       { key: 'resumeUrl', value: '/resume.pdf' },
+      { key: 'typewriterRoles', value: 'MERN Stack Developer,Frontend Developer,React Developer,JavaScript Developer,UI Developer' },
+      { key: 'profileImage', value: '' }, // <-- Added profile image setting
     ]);
     console.log('Settings seeded');
 
     console.log('\n✓ Database seeded successfully!');
     console.log('  Admin Email:', process.env.ADMIN_EMAIL || 'admin@example.com');
     console.log('  Admin Password:', process.env.ADMIN_PASSWORD || 'Admin@123');
+    console.log('\n  To add your profile image:');
+    console.log('  1. Go to http://localhost:3000/admin/settings');
+    console.log('  2. Upload your profile photo');
+    console.log('  3. Click Save Settings');
 
     process.exit(0);
   } catch (error) {

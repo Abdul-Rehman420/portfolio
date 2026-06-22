@@ -1,6 +1,6 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchAll, fetchById, createItem, updateItem, deleteItem } from '@/lib/api';
+import { fetchAll, fetchById, createItem, updateItem, deleteItem, getImageUrl } from '@/lib/api';
 import api from '@/lib/api';
 
 const useGenericQuery = (key, endpoint, params = {}) =>
@@ -58,7 +58,14 @@ export const useSocialLinkMutations = () => useGenericMutation('social-links', '
 
 export const useSettings = () => useQuery({ 
   queryKey: ['settings'], 
-  queryFn: () => fetchAll('settings'),
+  queryFn: async () => {
+    const data = await fetchAll('settings');
+    // Add cache-busting to profile image URL
+    if (data && data.profileImage) {
+      data.profileImage = getImageUrl(data.profileImage);
+    }
+    return data;
+  },
   staleTime: 0, // Always refetch settings on mount
 });
 
@@ -67,21 +74,15 @@ export const useSettingsMutation = () => {
   return useMutation({
     mutationFn: async (data) => {
       try {
-        // Use the api client with the correct endpoint
         const response = await api.put('/settings', data);
         return response.data;
       } catch (error) {
         console.error('Settings mutation error:', error);
-        // Throw the error with a meaningful message
         if (error.response) {
-          // The request was made and the server responded with a status code
-          // that falls out of the range of 2xx
           throw new Error(error.response.data?.message || `Server error: ${error.response.status}`);
         } else if (error.request) {
-          // The request was made but no response was received
           throw new Error('No response from server. Please check your network connection.');
         } else {
-          // Something happened in setting up the request that triggered an Error
           throw new Error(error.message || 'Failed to update settings');
         }
       }
@@ -91,7 +92,6 @@ export const useSettingsMutation = () => {
     },
     onError: (error) => {
       console.error('Settings mutation error:', error);
-      // The error will be caught in the component
     },
   });
 };

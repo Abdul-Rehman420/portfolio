@@ -6,6 +6,7 @@ import { IoAdd, IoSearch, IoTrash, IoClose } from 'react-icons/io5';
 import toast from 'react-hot-toast';
 import { createItem, updateItem, deleteItem, uploadImage } from '@/lib/api';
 import Image from 'next/image';
+import ImageCropModal from '@/components/admin/ImageCropModal';
 
 // Component for tags input
 const TagsInput = ({ value = [], onChange, placeholder }) => {
@@ -57,17 +58,26 @@ const TagsInput = ({ value = [], onChange, placeholder }) => {
   );
 };
 
-// Image upload component with Next.js Image
+// Image upload component with Next.js Image and Crop Modal
 const ImageUpload = ({ value, onChange }) => {
   const [uploading, setUploading] = useState(false);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
+    // Show crop modal with the selected file
+    setSelectedFile(file);
+    setShowCropModal(true);
+    e.target.value = '';
+  };
+
+  const handleCropComplete = async (croppedFile) => {
     setUploading(true);
     try {
-      const result = await uploadImage(file);
+      const result = await uploadImage(croppedFile);
       onChange(result.url);
       toast.success('Image uploaded successfully');
     } catch (error) {
@@ -75,6 +85,7 @@ const ImageUpload = ({ value, onChange }) => {
       toast.error(error.message || 'Upload failed');
     } finally {
       setUploading(false);
+      setSelectedFile(null);
     }
   };
 
@@ -99,20 +110,43 @@ const ImageUpload = ({ value, onChange }) => {
         className="text-sm text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary/20 file:text-primary file:text-sm hover:file:bg-primary/30 disabled:opacity-50 cursor-pointer" 
       />
       {uploading && <span className="text-xs text-primary ml-2">Uploading...</span>}
+
+      {/* Crop Modal */}
+      <ImageCropModal
+        isOpen={showCropModal}
+        onClose={() => {
+          setShowCropModal(false);
+          setSelectedFile(null);
+        }}
+        onCropComplete={handleCropComplete}
+        imageFile={selectedFile}
+      />
     </div>
   );
 };
 
-// Multi-image upload component with progress tracking
+// Multi-image upload component with progress tracking and crop modal
 const MultiImageUpload = ({ value = [], onChange }) => {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState('');
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [pendingFiles, setPendingFiles] = useState([]);
 
   const handleFile = async (e) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     
+    // If only one file, open crop modal
+    if (files.length === 1) {
+      setSelectedFile(files[0]);
+      setShowCropModal(true);
+      e.target.value = '';
+      return;
+    }
+    
+    // For multiple files, upload without cropping
     setUploading(true);
     setProgress(0);
     setUploadStatus(`Uploading 0/${files.length}...`);
@@ -144,6 +178,21 @@ const MultiImageUpload = ({ value = [], onChange }) => {
       setUploading(false);
       setProgress(0);
       setUploadStatus('');
+    }
+  };
+
+  const handleCropComplete = async (croppedFile) => {
+    setUploading(true);
+    try {
+      const result = await uploadImage(croppedFile);
+      onChange([...value, result.url]);
+      toast.success('Image uploaded successfully');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error(error.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+      setSelectedFile(null);
     }
   };
 
@@ -197,6 +246,17 @@ const MultiImageUpload = ({ value = [], onChange }) => {
           className="text-sm text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary/20 file:text-primary file:text-sm hover:file:bg-primary/30 disabled:opacity-50 cursor-pointer"
         />
       )}
+
+      {/* Crop Modal for single image uploads */}
+      <ImageCropModal
+        isOpen={showCropModal}
+        onClose={() => {
+          setShowCropModal(false);
+          setSelectedFile(null);
+        }}
+        onCropComplete={handleCropComplete}
+        imageFile={selectedFile}
+      />
     </div>
   );
 };
