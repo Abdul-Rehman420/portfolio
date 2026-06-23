@@ -73,84 +73,74 @@ export default function ImageCropModal({
     setRotation((prev) => (prev + 90) % 360);
   };
 
-  const generateCroppedImage = async () => {
-    if (!completedCrop || !imgRef.current || !imageLoaded) {
-      alert('Please wait for the image to load and select a crop area');
-      return;
+const generateCroppedImage = async () => {
+  if (!completedCrop || !imgRef.current || !imageLoaded) {
+    alert('Please wait for the image to load and select a crop area');
+    return;
+  }
+
+  setIsProcessing(true);
+
+  try {
+    const image = imgRef.current;
+
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+
+    const cropWidth = completedCrop.width * scaleX;
+    const cropHeight = completedCrop.height * scaleY;
+    const cropX = completedCrop.x * scaleX;
+    const cropY = completedCrop.y * scaleY;
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const SIZE = 800;
+
+    canvas.width = SIZE;
+    canvas.height = SIZE;
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    ctx.drawImage(
+      image,
+      cropX,
+      cropY,
+      cropWidth,
+      cropHeight,
+      0,
+      0,
+      SIZE,
+      SIZE
+    );
+
+    const blob = await new Promise((resolve) => {
+      canvas.toBlob(resolve, 'image/jpeg', 0.95);
+    });
+
+    if (!blob) {
+      throw new Error('Failed to create image');
     }
 
-    setIsProcessing(true);
-
-    try {
-      const image = imgRef.current;
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-
-      const scaleX = image.naturalWidth / image.width;
-      const scaleY = image.naturalHeight / image.height;
-      
-      const cropWidth = completedCrop.width * scaleX;
-      const cropHeight = completedCrop.height * scaleY;
-      const cropX = completedCrop.x * scaleX;
-      const cropY = completedCrop.y * scaleY;
-
-      const rad = (rotation * Math.PI) / 180;
-      const isRotated = rotation % 180 !== 0;
-      
-      const width = isRotated ? cropHeight : cropWidth;
-      const height = isRotated ? cropWidth : cropHeight;
-      
-      canvas.width = Math.round(width);
-      canvas.height = Math.round(height);
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.save();
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate(rad);
-      
-      if (isRotated) {
-        ctx.drawImage(
-          image,
-          cropX, cropY, cropWidth, cropHeight,
-          -cropHeight / 2, -cropWidth / 2,
-          cropHeight, cropWidth
-        );
-      } else {
-        ctx.drawImage(
-          image,
-          cropX, cropY, cropWidth, cropHeight,
-          -cropWidth / 2, -cropHeight / 2,
-          cropWidth, cropHeight
-        );
-      }
-
-      ctx.restore();
-
-      const blob = await new Promise((resolve) => {
-        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.95);
-      });
-
-      if (!blob) {
-        throw new Error('Failed to create image blob');
-      }
-
-      const croppedFile = new File([blob], `cropped_${Date.now()}.jpg`, {
+    const croppedFile = new File(
+      [blob],
+      `profile_${Date.now()}.jpg`,
+      {
         type: 'image/jpeg',
         lastModified: Date.now(),
-      });
+      }
+    );
 
-      // Clean up
-      URL.revokeObjectURL(imageUrl);
-      
-      onCropComplete(croppedFile);
-      onClose();
-    } catch (error) {
-      console.error('Error cropping image:', error);
-      alert('Failed to crop image. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+    onCropComplete(croppedFile);
+    onClose();
+  } catch (error) {
+    console.error(error);
+    alert('Failed to crop image');
+  } finally {
+    setIsProcessing(false);
+  }
+};
 
   const handleClose = () => {
     URL.revokeObjectURL(imageUrl);

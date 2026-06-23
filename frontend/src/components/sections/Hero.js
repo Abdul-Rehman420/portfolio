@@ -82,14 +82,14 @@ const Hero = () => {
               <div className="absolute inset-0 bg-linear-to-br from-primary via-secondary to-accent rounded-full animate-spin-slow opacity-30 blur-2xl" />
               <div className="absolute inset-4 bg-linear-to-br from-primary via-secondary to-accent rounded-full animate-spin-slow opacity-40" style={{ animationDirection: 'reverse' }} />
               
-              <div className="absolute inset-8 rounded-full overflow-hidden border-2 border-white/10 shadow-2xl shadow-primary/20 bg-dark-card">
+              <div className="absolute inset-8 rounded-full overflow-hidden border-2 border-white/10 shadow-2xl shadow-primary/20 ">
                 {profileImage ? (
                   <div className="relative w-full h-full">
                     <Image 
                       src={profileImage} 
                       alt={s.siteName || 'Profile'} 
                       fill
-                      className="object-cover"
+                      className="object-cover object-center"
                       unoptimized={profileImage.startsWith('http')}
                       priority
                       sizes="(max-width: 640px) 288px, (max-width: 768px) 320px, 384px"
