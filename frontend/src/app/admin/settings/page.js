@@ -322,13 +322,14 @@ export default function SettingsPage() {
                 <div key={field.key} className="border-b border-white/10 pb-4">
                   <label className="text-sm text-gray-400 mb-2 block">{field.label}</label>
                   
+                  {/* Profile image preview - rounded-full for circle display */}
                   {form[field.key] && (
                     <div className="relative w-32 h-32 rounded-full overflow-hidden mb-3 border-2 border-primary/30">
                       <Image 
                         src={form[field.key]} 
                         alt="Profile" 
                         fill
-                        className="object-cover"
+                        className="object-cover object-center"
                         unoptimized={form[field.key].startsWith('http')}
                       />
                       <button

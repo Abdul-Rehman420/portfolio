@@ -8,8 +8,7 @@ const storage = new CloudinaryStorage({
     folder: 'portfolio/projects',
     allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'],
     transformation: [
-      { width: 1920, height: 1080, crop: 'fill', quality: 'auto' },
-      { fetch_format: 'auto' }
+      { quality: 'auto', fetch_format: 'auto' }
     ],
   },
 });

@@ -39,7 +39,6 @@ export default function ImageCropModal({
   // Reset crop when modal opens with new image
   useEffect(() => {
     if (isOpen && imageFile) {
-      // Use a timeout to avoid the set-state-in-effect warning
       const timer = setTimeout(() => {
         setCrop(undefined);
         setCompletedCrop(null);
@@ -60,8 +59,8 @@ export default function ImageCropModal({
     const { width, height } = e.currentTarget;
     setImageLoaded(true);
     
-    // Set initial crop only once
     if (isFirstLoad) {
+      // Use aspect 1:1 for square crop (best for profile photos)
       const initialCrop = centerAspectCrop(width, height, 1);
       setCrop(initialCrop);
       setCompletedCrop(initialCrop);
@@ -73,74 +72,76 @@ export default function ImageCropModal({
     setRotation((prev) => (prev + 90) % 360);
   };
 
-const generateCroppedImage = async () => {
-  if (!completedCrop || !imgRef.current || !imageLoaded) {
-    alert('Please wait for the image to load and select a crop area');
-    return;
-  }
-
-  setIsProcessing(true);
-
-  try {
-    const image = imgRef.current;
-
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
-
-    const cropWidth = completedCrop.width * scaleX;
-    const cropHeight = completedCrop.height * scaleY;
-    const cropX = completedCrop.x * scaleX;
-    const cropY = completedCrop.y * scaleY;
-
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-
-    const SIZE = 800;
-
-    canvas.width = SIZE;
-    canvas.height = SIZE;
-
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-
-    ctx.drawImage(
-      image,
-      cropX,
-      cropY,
-      cropWidth,
-      cropHeight,
-      0,
-      0,
-      SIZE,
-      SIZE
-    );
-
-    const blob = await new Promise((resolve) => {
-      canvas.toBlob(resolve, 'image/jpeg', 0.95);
-    });
-
-    if (!blob) {
-      throw new Error('Failed to create image');
+  const generateCroppedImage = async () => {
+    if (!completedCrop || !imgRef.current || !imageLoaded) {
+      alert('Please wait for the image to load and select a crop area');
+      return;
     }
 
-    const croppedFile = new File(
-      [blob],
-      `profile_${Date.now()}.jpg`,
-      {
-        type: 'image/jpeg',
-        lastModified: Date.now(),
-      }
-    );
+    setIsProcessing(true);
 
-    onCropComplete(croppedFile);
-    onClose();
-  } catch (error) {
-    console.error(error);
-    alert('Failed to crop image');
-  } finally {
-    setIsProcessing(false);
-  }
-};
+    try {
+      const image = imgRef.current;
+
+      const scaleX = image.naturalWidth / image.width;
+      const scaleY = image.naturalHeight / image.height;
+
+      const cropWidth = completedCrop.width * scaleX;
+      const cropHeight = completedCrop.height * scaleY;
+      const cropX = completedCrop.x * scaleX;
+      const cropY = completedCrop.y * scaleY;
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Use 800x800 for square images
+      const SIZE = 800;
+
+      canvas.width = SIZE;
+      canvas.height = SIZE;
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      // Draw the cropped area
+      ctx.drawImage(
+        image,
+        cropX,
+        cropY,
+        cropWidth,
+        cropHeight,
+        0,
+        0,
+        SIZE,
+        SIZE
+      );
+
+      const blob = await new Promise((resolve) => {
+        canvas.toBlob(resolve, 'image/jpeg', 0.95);
+      });
+
+      if (!blob) {
+        throw new Error('Failed to create image');
+      }
+
+      const croppedFile = new File(
+        [blob],
+        `profile_${Date.now()}.jpg`,
+        {
+          type: 'image/jpeg',
+          lastModified: Date.now(),
+        }
+      );
+
+      onCropComplete(croppedFile);
+      onClose();
+    } catch (error) {
+      console.error(error);
+      alert('Failed to crop image');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const handleClose = () => {
     URL.revokeObjectURL(imageUrl);
@@ -165,7 +166,7 @@ const generateCroppedImage = async () => {
         >
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <h2 className="text-xl font-bold text-white">Crop and Rotate</h2>
+            <h2 className="text-xl font-bold text-white">Crop Profile Image</h2>
             <button
               onClick={handleClose}
               className="p-1 hover:bg-white/10 rounded-lg transition-all cursor-pointer text-white"
@@ -192,8 +193,7 @@ const generateCroppedImage = async () => {
                     }
                   }}
                   aspect={1}
-                  circularCrop
-                  keepSelection={true}
+                  // Removed circularCrop for square crop
                   minWidth={50}
                   minHeight={50}
                   className="max-h-[50vh] w-auto"
@@ -231,6 +231,9 @@ const generateCroppedImage = async () => {
                 <span className="text-xs text-gray-400">
                   {rotation}° rotation
                 </span>
+                <span className="text-xs text-gray-500 ml-2 px-2 py-1 bg-primary/10 text-primary rounded">
+                  Square crop (1:1)
+                </span>
               </div>
               
               <div className="flex items-center gap-3">
@@ -253,7 +256,7 @@ const generateCroppedImage = async () => {
                   ) : (
                     <>
                       <IoCheckmark size={18} />
-                      Next
+                      Crop & Save
                     </>
                   )}
                 </button>
@@ -261,7 +264,7 @@ const generateCroppedImage = async () => {
             </div>
 
             <p className="text-xs text-gray-400 mt-2">
-              Drag the crop area to select your image. Use rotate to adjust orientation.
+              Drag the crop area to select your image. Use rotate to adjust orientation. The image will be cropped to a square (1:1) for your profile.
             </p>
           </div>
         </motion.div>

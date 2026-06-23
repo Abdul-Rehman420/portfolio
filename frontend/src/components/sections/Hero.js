@@ -6,19 +6,12 @@ import { useTypewriter } from '@/hooks/useTypewriter';
 import { useSocialLinks, useSettings } from '@/hooks/useApi';
 import { FaGithub, FaLinkedin, FaTwitter, FaInstagram, FaEnvelope } from 'react-icons/fa';
 import { IoDownload, IoEye } from 'react-icons/io5';
-import { useEffect } from 'react';
 
 const iconMap = { FaGithub, FaLinkedin, FaTwitter, FaInstagram, FaEnvelope };
 
 const Hero = () => {
   const { data: settings } = useSettings();
   const { data: links } = useSocialLinks();
-  
-  useEffect(() => {
-    if (settings?.profileImage) {
-      console.log('Profile image URL in Hero:', settings.profileImage);
-    }
-  }, [settings]);
   
   const rolesString = settings?.typewriterRoles || 'MERN Stack Developer,Frontend Developer,React Developer,JavaScript Developer,UI Developer';
   const roles = rolesString.split(',').map(role => role.trim()).filter(role => role);
@@ -82,7 +75,8 @@ const Hero = () => {
               <div className="absolute inset-0 bg-linear-to-br from-primary via-secondary to-accent rounded-full animate-spin-slow opacity-30 blur-2xl" />
               <div className="absolute inset-4 bg-linear-to-br from-primary via-secondary to-accent rounded-full animate-spin-slow opacity-40" style={{ animationDirection: 'reverse' }} />
               
-              <div className="absolute inset-8 rounded-full overflow-hidden border-2 border-white/10 shadow-2xl shadow-primary/20 ">
+              {/* Profile image container - rounded-full ensures circle display */}
+              <div className="absolute inset-8 rounded-full overflow-hidden border-2 border-white/10 shadow-2xl shadow-primary/20">
                 {profileImage ? (
                   <div className="relative w-full h-full">
                     <Image 
@@ -93,13 +87,6 @@ const Hero = () => {
                       unoptimized={profileImage.startsWith('http')}
                       priority
                       sizes="(max-width: 640px) 288px, (max-width: 768px) 320px, 384px"
-                      onError={(e) => {
-                        console.error('Image failed to load in Hero:', profileImage);
-                        e.target.style.display = 'none';
-                      }}
-                      onLoad={() => {
-                        console.log('Image loaded successfully in Hero:', profileImage);
-                      }}
                     />
                   </div>
                 ) : (

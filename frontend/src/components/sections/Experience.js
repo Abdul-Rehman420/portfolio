@@ -1,5 +1,6 @@
 'use client';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { useExperiences, useCertifications } from '@/hooks/useApi';
 
 const Experience = () => {
@@ -55,7 +56,7 @@ const Experience = () => {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
               {certifications.map(cert => (
                 <div key={cert._id} className="glass p-4 rounded-xl">
-                  {cert.image && <img src={cert.image} alt={cert.title} className="w-full h-32 object-cover rounded-lg mb-3" />}
+                  {cert.image && <Image src={cert.image} alt={cert.title} width={400} height={200} className="w-full h-auto object-contain rounded-lg mb-3" unoptimized={cert.image.startsWith('http')} />}
                   <h4 className="font-medium text-sm">{cert.title}</h4>
                   <p className="text-xs text-gray-400">{cert.issuer} • {cert.date}</p>
                   {cert.link && <a href={cert.link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 inline-block">Verify</a>}

@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoChevronBack, IoChevronForward, IoStar } from 'react-icons/io5';
+import Image from 'next/image';
 import { useTestimonials } from '@/hooks/useApi';
 
 const Testimonials = () => {
@@ -31,7 +32,7 @@ const Testimonials = () => {
                 className="glass p-8 md:p-10 rounded-2xl text-center">
                 <div className="w-20 h-20 rounded-full bg-linear-to-br from-primary via-secondary to-accent p-0.5 mx-auto mb-4">
                   <div className="w-full h-full rounded-full bg-dark-bg flex items-center justify-center">
-                    {t.image ? <img src={t.image} alt={t.name} className="w-full h-full rounded-full object-cover" /> : <span className="text-2xl font-bold gradient-text">{t.name?.[0]}</span>}
+                    {t.image ? <Image src={t.image} alt={t.name} width={80} height={80} className="w-full h-full rounded-full object-cover" unoptimized={t.image.startsWith('http')} /> : <span className="text-2xl font-bold gradient-text">{t.name?.[0]}</span>}
                   </div>
                 </div>
                 <h3 className="font-semibold text-lg">{t.name}</h3>
