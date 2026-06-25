@@ -68,7 +68,6 @@ const ImageUpload = ({ value, onChange }) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Show crop modal with the selected file
     setSelectedFile(file);
     setShowCropModal(true);
     e.target.value = '';
@@ -111,7 +110,6 @@ const ImageUpload = ({ value, onChange }) => {
       />
       {uploading && <span className="text-xs text-primary ml-2">Uploading...</span>}
 
-      {/* Crop Modal */}
       <ImageCropModal
         isOpen={showCropModal}
         onClose={() => {
@@ -125,20 +123,21 @@ const ImageUpload = ({ value, onChange }) => {
   );
 };
 
-// Multi-image upload component with progress tracking and crop modal
+// ✅ FIXED: Multi-image upload component with safety checks
 const MultiImageUpload = ({ value = [], onChange }) => {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState('');
   const [showCropModal, setShowCropModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [pendingFiles, setPendingFiles] = useState([]);
+  
+  // ✅ CRITICAL FIX: Ensure value is always an array
+  const images = Array.isArray(value) ? value : [];
 
   const handleFile = async (e) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     
-    // If only one file, open crop modal
     if (files.length === 1) {
       setSelectedFile(files[0]);
       setShowCropModal(true);
@@ -146,7 +145,6 @@ const MultiImageUpload = ({ value = [], onChange }) => {
       return;
     }
     
-    // For multiple files, upload without cropping
     setUploading(true);
     setProgress(0);
     setUploadStatus(`Uploading 0/${files.length}...`);
@@ -169,7 +167,7 @@ const MultiImageUpload = ({ value = [], onChange }) => {
       }
       
       if (newImages.length > 0) {
-        onChange([...value, ...newImages]);
+        onChange([...images, ...newImages]);
         toast.success(`${newImages.length} image(s) uploaded successfully`);
       }
     } catch (error) {
@@ -185,7 +183,7 @@ const MultiImageUpload = ({ value = [], onChange }) => {
     setUploading(true);
     try {
       const result = await uploadImage(croppedFile);
-      onChange([...value, result.url]);
+      onChange([...images, result.url]);
       toast.success('Image uploaded successfully');
     } catch (error) {
       console.error('Upload error:', error);
@@ -197,13 +195,13 @@ const MultiImageUpload = ({ value = [], onChange }) => {
   };
 
   const removeImage = (index) => {
-    onChange(value.filter((_, i) => i !== index));
+    onChange(images.filter((_, i) => i !== index));
   };
 
   return (
     <div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
-        {value.map((url, index) => (
+        {images.map((url, index) => (
           <div key={index} className="relative aspect-video rounded-lg overflow-hidden group">
             <Image 
               src={url} 
@@ -247,7 +245,6 @@ const MultiImageUpload = ({ value = [], onChange }) => {
         />
       )}
 
-      {/* Crop Modal for single image uploads */}
       <ImageCropModal
         isOpen={showCropModal}
         onClose={() => {
@@ -361,12 +358,31 @@ const AdminCrudContent = ({
     }
   };
 
+  // Ensure form has default values for all fields
+  const getDefaultForm = () => {
+    const defaults = {};
+    fields.forEach(field => {
+      if (field.type === 'multiImage') {
+        defaults[field.key] = [];
+      } else if (field.type === 'tags') {
+        defaults[field.key] = [];
+      } else {
+        defaults[field.key] = '';
+      }
+    });
+    return defaults;
+  };
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold">{title}</h1>
         <button 
-          onClick={() => { resetForm(); setShowForm(true); }}
+          onClick={() => { 
+            resetForm(); 
+            setForm(getDefaultForm());
+            setShowForm(true); 
+          }}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-all cursor-pointer"
         >
           <IoAdd size={18} /> Add New
@@ -521,9 +537,9 @@ const AdminCrudContent = ({
                                   unoptimized={item[f.key].startsWith('http')}
                                 />
                               </div>
-                            ) : f.type === 'multiImage' && item[f.key]?.length > 0 ? (
+                            ) : f.type === 'multiImage' ? (
                               <span className="text-xs text-primary">
-                                {item[f.key].length} image{item[f.key].length > 1 ? 's' : ''}
+                                {Array.isArray(item[f.key]) ? item[f.key].length : 0} image{Array.isArray(item[f.key]) && item[f.key].length !== 1 ? 's' : ''}
                               </span>
                             ) : f.type === 'tags' ? (
                               (Array.isArray(item[f.key]) ? item[f.key] : []).join(', ')
@@ -615,8 +631,18 @@ export default function AdminCrudPage({ title, fields, useHook, mutations: propM
   };
 
   const openEdit = (item) => {
-    setForm(item);
-    setEditing(item);
+    // ✅ Ensure images and other array fields are always arrays
+    const safeItem = {
+      ...item,
+      images: Array.isArray(item.images) ? item.images : [],
+      technologies: Array.isArray(item.technologies) ? item.technologies : [],
+      features: Array.isArray(item.features) ? item.features : [],
+      responsibilities: Array.isArray(item.responsibilities) ? item.responsibilities : [],
+      achievements: Array.isArray(item.achievements) ? item.achievements : [],
+      certificates: Array.isArray(item.certificates) ? item.certificates : [],
+    };
+    setForm(safeItem);
+    setEditing(safeItem);
     setShowForm(true);
   };
 
