@@ -28,17 +28,14 @@ export default function ImageCropModal({
   onCropComplete, 
   imageFile 
 }) {
-  // Fixed aspect ratio for 1280x720 (16:9)
-  const FIXED_ASPECT = 16 / 9;
-  const OUTPUT_WIDTH = 1280;
-  const OUTPUT_HEIGHT = 720;
-
+  // Free cropping - no fixed aspect ratio
   const [crop, setCrop] = useState(undefined);
   const [rotation, setRotation] = useState(0);
   const [completedCrop, setCompletedCrop] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [aspect, setAspect] = useState(null); // null = free cropping
   const imgRef = useRef(null);
   const isClosingRef = useRef(false);
 
@@ -63,12 +60,42 @@ export default function ImageCropModal({
     setImageLoaded(true);
     
     if (isFirstLoad) {
-      const initialCrop = centerAspectCrop(width, height, FIXED_ASPECT);
+      // Set initial crop to about 90% of the image
+      const initialCrop = {
+        unit: '%',
+        width: 90,
+        height: 90,
+        x: 5,
+        y: 5,
+      };
       setCrop(initialCrop);
       setCompletedCrop(initialCrop);
       setIsFirstLoad(false);
     }
-  }, [FIXED_ASPECT, isFirstLoad]);
+  }, [isFirstLoad]);
+
+  const handleAspectChange = useCallback((newAspect) => {
+    setAspect(newAspect);
+    if (imgRef.current && imageLoaded) {
+      const { width, height } = imgRef.current;
+      let newCrop;
+      if (newAspect) {
+        // Fixed aspect ratio
+        newCrop = centerAspectCrop(width, height, newAspect);
+      } else {
+        // Free cropping - use current crop or default
+        newCrop = crop || {
+          unit: '%',
+          width: 90,
+          height: 90,
+          x: 5,
+          y: 5,
+        };
+      }
+      setCrop(newCrop);
+      setCompletedCrop(newCrop);
+    }
+  }, [imageLoaded, crop]);
 
   const handleRotate = useCallback(() => {
     setRotation((prev) => (prev + 90) % 360);
@@ -112,14 +139,17 @@ export default function ImageCropModal({
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
-      // FORCE 1280x720 output
-      canvas.width = OUTPUT_WIDTH;
-      canvas.height = OUTPUT_HEIGHT;
+      // Use the actual crop dimensions (preserve quality)
+      const outputWidth = Math.round(cropWidth);
+      const outputHeight = Math.round(cropHeight);
+
+      canvas.width = outputWidth;
+      canvas.height = outputHeight;
 
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
 
-      // Draw the cropped area and scale to 1280x720
+      // Draw the cropped area at full resolution
       ctx.drawImage(
         image,
         cropX,
@@ -128,8 +158,8 @@ export default function ImageCropModal({
         cropHeight,
         0,
         0,
-        OUTPUT_WIDTH,
-        OUTPUT_HEIGHT
+        outputWidth,
+        outputHeight
       );
 
       const blob = await new Promise((resolve) => {
@@ -158,7 +188,7 @@ export default function ImageCropModal({
     } finally {
       setIsProcessing(false);
     }
-  }, [completedCrop, imageLoaded, isProcessing, onCropComplete, OUTPUT_WIDTH, OUTPUT_HEIGHT]);
+  }, [completedCrop, imageLoaded, isProcessing, onCropComplete]);
 
   const handleClose = useCallback(() => {
     if (isProcessing) {
@@ -190,7 +220,7 @@ export default function ImageCropModal({
         >
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <h2 className="text-xl font-bold text-white">Crop Image (1280x720)</h2>
+            <h2 className="text-xl font-bold text-white">Crop Image</h2>
             <button
               onClick={handleClose}
               disabled={isProcessing}
@@ -208,7 +238,7 @@ export default function ImageCropModal({
                   crop={crop}
                   onChange={handleCropChange}
                   onComplete={handleCropComplete}
-                  aspect={FIXED_ASPECT}
+                  aspect={aspect}
                   minWidth={50}
                   minHeight={50}
                   className="max-h-[50vh] w-auto"
@@ -232,11 +262,31 @@ export default function ImageCropModal({
             )}
           </div>
 
-          {/* Info - Fixed resolution */}
+          {/* Aspect Ratio Selector - Free is default */}
           <div className="px-4 pt-2 pb-1 border-t border-white/10">
-            <p className="text-xs text-gray-400">
-              Fixed Aspect Ratio: <span className="text-primary font-medium">16:9 (1280x720)</span>
-            </p>
+            <p className="text-xs text-gray-400 mb-2">Aspect Ratio</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: 'Free', value: null },
+                { label: '1:1', value: 1 },
+                { label: '4:3', value: 4 / 3 },
+                { label: '16:9', value: 16 / 9 },
+                { label: '3:2', value: 3 / 2 },
+                { label: '2:3', value: 2 / 3 },
+              ].map((preset) => (
+                <button
+                  key={preset.label}
+                  onClick={() => handleAspectChange(preset.value)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                    aspect === preset.value
+                      ? 'bg-primary text-white'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Controls */}
@@ -277,7 +327,7 @@ export default function ImageCropModal({
                   ) : (
                     <>
                       <IoCheckmark size={18} />
-                      Crop & Save (1280x720)
+                      Crop & Save
                     </>
                   )}
                 </button>
@@ -285,7 +335,7 @@ export default function ImageCropModal({
             </div>
 
             <p className="text-xs text-gray-400 mt-2">
-              Drag the crop area to select your image. The output will be exactly <span className="text-primary font-medium">1280x720</span> pixels.
+              Drag the crop area to select your image. Use rotate to adjust orientation. Choose an aspect ratio above or select &quot;Free&quot; for unrestricted cropping.
             </p>
           </div>
         </motion.div>
