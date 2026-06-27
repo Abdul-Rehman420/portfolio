@@ -91,9 +91,16 @@ export default function SettingsPage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [activeSection, setActiveSection] = useState('General');
   const isInitialLoad = useRef(true);
+  // Add a ref to track if we're in the middle of a crop operation
+  const isCroppingRef = useRef(false);
 
   useEffect(() => {
     if (settings && isInitialLoad.current) {
+      // Don't reset form if we're in the middle of cropping
+      if (isCroppingRef.current) {
+        return;
+      }
+      
       const parsedSettings = { ...settings };
       
       if (typeof parsedSettings.journeyItems === 'string') {
@@ -217,18 +224,39 @@ export default function SettingsPage() {
   };
 
   const handleCropComplete = async (croppedFile) => {
+    // Set cropping flag to prevent re-render from resetting form
+    isCroppingRef.current = true;
     setUploading(true);
     try {
       const result = await uploadImage(croppedFile);
       handleChange('profileImage', result.url);
       toast.success('Profile image uploaded successfully!');
+      
+      // Close the modal first
+      setShowCropModal(false);
+      setSelectedFile(null);
+      
+      // Refetch settings after modal is closed
+      await refetch();
+      
     } catch (error) {
       console.error('Upload error:', error);
       toast.error(error.message || 'Upload failed');
+      // Keep modal open on error so user can retry
     } finally {
       setUploading(false);
-      setSelectedFile(null);
+      // Clear the cropping flag after everything is done
+      setTimeout(() => {
+        isCroppingRef.current = false;
+      }, 100);
     }
+  };
+
+  // Handle modal close with cleanup
+  const handleModalClose = () => {
+    setShowCropModal(false);
+    setSelectedFile(null);
+    isCroppingRef.current = false;
   };
 
   const removeImage = () => {
@@ -445,10 +473,7 @@ export default function SettingsPage() {
 
       <ImageCropModal
         isOpen={showCropModal}
-        onClose={() => {
-          setShowCropModal(false);
-          setSelectedFile(null);
-        }}
+        onClose={handleModalClose}
         onCropComplete={handleCropComplete}
         imageFile={selectedFile}
       />
