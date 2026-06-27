@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -37,6 +37,22 @@ export default function ImageCropModal({
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [aspect, setAspect] = useState(1);
 
+  // Memoize blob URL so it doesn't change on every render (which would reload the image)
+  const blobUrl = useMemo(() => {
+    if (!imageFile) return null;
+    return URL.createObjectURL(imageFile);
+  }, [imageFile]);
+
+  // Cleanup blob URL when it changes or component unmounts
+  useEffect(() => {
+    const currentUrl = blobUrl;
+    return () => {
+      if (currentUrl) {
+        URL.revokeObjectURL(currentUrl);
+      }
+    };
+  }, [blobUrl]);
+
   // Reset crop when modal opens with new image
   useEffect(() => {
     if (isOpen && imageFile) {
@@ -53,8 +69,6 @@ export default function ImageCropModal({
   }, [isOpen, imageFile]);
 
   if (!isOpen || !imageFile) return null;
-
-  const imageUrl = URL.createObjectURL(imageFile);
 
   const onImageLoad = (e) => {
     const { width, height } = e.currentTarget;
@@ -176,7 +190,7 @@ export default function ImageCropModal({
   };
 
   const handleClose = () => {
-    URL.revokeObjectURL(imageUrl);
+    if (blobUrl) URL.revokeObjectURL(blobUrl);
     onClose();
   };
 
@@ -209,7 +223,7 @@ export default function ImageCropModal({
 
           {/* Image Crop Area */}
           <div className="p-4 max-h-[60vh] overflow-auto">
-            {imageUrl && (
+            {blobUrl && (
               <div className="flex justify-center">
                 <ReactCrop
                   crop={crop}
@@ -232,7 +246,7 @@ export default function ImageCropModal({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     ref={imgRef}
-                    src={imageUrl}
+                    src={blobUrl}
                     alt="Crop preview"
                     onLoad={onImageLoad}
                     style={{ 
