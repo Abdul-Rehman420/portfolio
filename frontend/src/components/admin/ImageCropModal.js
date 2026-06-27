@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,22 +28,27 @@ export default function ImageCropModal({
   onCropComplete, 
   imageFile 
 }) {
+  // Fixed aspect ratio for 1280x720 (16:9)
+  const FIXED_ASPECT = 16 / 9;
+  const OUTPUT_WIDTH = 1280;
+  const OUTPUT_HEIGHT = 720;
+
   const [crop, setCrop] = useState(undefined);
   const [rotation, setRotation] = useState(0);
   const [completedCrop, setCompletedCrop] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const imgRef = useRef(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
-  const [aspect, setAspect] = useState(1);
+  const imgRef = useRef(null);
+  const isClosingRef = useRef(false);
 
-  // Memoize blob URL so it doesn't change on every render (which would reload the image)
+  // Memoize blob URL
   const blobUrl = useMemo(() => {
     if (!imageFile) return null;
     return URL.createObjectURL(imageFile);
   }, [imageFile]);
 
-  // Cleanup blob URL when it changes or component unmounts
+  // Cleanup blob URL
   useEffect(() => {
     const currentUrl = blobUrl;
     return () => {
@@ -53,59 +58,44 @@ export default function ImageCropModal({
     };
   }, [blobUrl]);
 
-  // Reset crop when modal opens with new image
-  useEffect(() => {
-    if (isOpen && imageFile) {
-      const timer = setTimeout(() => {
-        setCrop(undefined);
-        setCompletedCrop(null);
-        setRotation(0);
-        setImageLoaded(false);
-        setIsFirstLoad(true);
-      }, 0);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, imageFile]);
-
-  if (!isOpen || !imageFile) return null;
-
-  const onImageLoad = (e) => {
+  const onImageLoad = useCallback((e) => {
     const { width, height } = e.currentTarget;
     setImageLoaded(true);
     
     if (isFirstLoad) {
-      const initialCrop = aspect
-        ? centerAspectCrop(width, height, aspect)
-        : undefined;
+      const initialCrop = centerAspectCrop(width, height, FIXED_ASPECT);
       setCrop(initialCrop);
       setCompletedCrop(initialCrop);
       setIsFirstLoad(false);
     }
-  };
+  }, [FIXED_ASPECT, isFirstLoad]);
 
-  const handleAspectChange = (newAspect) => {
-    setAspect(newAspect);
-    if (imgRef.current && imageLoaded) {
-      const { width, height } = imgRef.current;
-      const newCrop = newAspect
-        ? centerAspectCrop(width, height, newAspect)
-        : undefined;
-      setCrop(newCrop);
+  const handleRotate = useCallback(() => {
+    setRotation((prev) => (prev + 90) % 360);
+  }, []);
+
+  const handleCropChange = useCallback((newCrop) => {
+    setCrop(newCrop);
+    if (newCrop) {
       setCompletedCrop(newCrop);
     }
-  };
+  }, []);
 
-  const handleRotate = () => {
-    setRotation((prev) => (prev + 90) % 360);
-  };
+  const handleCropComplete = useCallback((c) => {
+    if (c) {
+      setCompletedCrop(c);
+    }
+  }, []);
 
-  const generateCroppedImage = async () => {
+  const generateCroppedImage = useCallback(async () => {
     if (!completedCrop || !imgRef.current || !imageLoaded) {
       alert('Please wait for the image to load and select a crop area');
       return;
     }
 
+    // Prevent multiple clicks
+    if (isProcessing) return;
+    
     setIsProcessing(true);
 
     try {
@@ -122,34 +112,14 @@ export default function ImageCropModal({
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
-      // Determine output dimensions based on aspect ratio
-      const MAX_SIZE = 1200;
-      let outputWidth, outputHeight;
-
-      if (aspect) {
-        if (aspect >= 1) {
-          outputWidth = MAX_SIZE;
-          outputHeight = Math.round(MAX_SIZE / aspect);
-        } else {
-          outputHeight = MAX_SIZE;
-          outputWidth = Math.round(MAX_SIZE * aspect);
-        }
-      } else {
-        // Free crop — use natural crop dimensions scaled down to MAX_SIZE
-        const cropNaturalWidth = completedCrop.width * scaleX;
-        const cropNaturalHeight = completedCrop.height * scaleY;
-        const ratio = Math.min(MAX_SIZE / cropNaturalWidth, MAX_SIZE / cropNaturalHeight, 1);
-        outputWidth = Math.round(cropNaturalWidth * ratio);
-        outputHeight = Math.round(cropNaturalHeight * ratio);
-      }
-
-      canvas.width = outputWidth;
-      canvas.height = outputHeight;
+      // FORCE 1280x720 output
+      canvas.width = OUTPUT_WIDTH;
+      canvas.height = OUTPUT_HEIGHT;
 
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
 
-      // Draw the cropped area
+      // Draw the cropped area and scale to 1280x720
       ctx.drawImage(
         image,
         cropX,
@@ -158,8 +128,8 @@ export default function ImageCropModal({
         cropHeight,
         0,
         0,
-        outputWidth,
-        outputHeight
+        OUTPUT_WIDTH,
+        OUTPUT_HEIGHT
       );
 
       const blob = await new Promise((resolve) => {
@@ -179,20 +149,28 @@ export default function ImageCropModal({
         }
       );
 
-      onCropComplete(croppedFile);
-      onClose();
+      // Call the parent callback
+      await onCropComplete(croppedFile);
+      
     } catch (error) {
       console.error(error);
       alert('Failed to crop image');
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [completedCrop, imageLoaded, isProcessing, onCropComplete, OUTPUT_WIDTH, OUTPUT_HEIGHT]);
 
-  const handleClose = () => {
-    if (blobUrl) URL.revokeObjectURL(blobUrl);
+  const handleClose = useCallback(() => {
+    if (isProcessing) {
+      // Don't close while processing
+      alert('Please wait for the crop to complete');
+      return;
+    }
+    isClosingRef.current = true;
     onClose();
-  };
+  }, [isProcessing, onClose]);
+
+  if (!isOpen || !imageFile) return null;
 
   return (
     <AnimatePresence>
@@ -212,10 +190,11 @@ export default function ImageCropModal({
         >
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <h2 className="text-xl font-bold text-white">Crop Profile Image</h2>
+            <h2 className="text-xl font-bold text-white">Crop Image (1280x720)</h2>
             <button
               onClick={handleClose}
-              className="p-1 hover:bg-white/10 rounded-lg transition-all cursor-pointer text-white"
+              disabled={isProcessing}
+              className="p-1 hover:bg-white/10 rounded-lg transition-all cursor-pointer text-white disabled:opacity-50"
             >
               <IoClose size={24} />
             </button>
@@ -227,18 +206,9 @@ export default function ImageCropModal({
               <div className="flex justify-center">
                 <ReactCrop
                   crop={crop}
-                  onChange={(newCrop) => {
-                    setCrop(newCrop);
-                    if (newCrop) {
-                      setCompletedCrop(newCrop);
-                    }
-                  }}
-                  onComplete={(c) => {
-                    if (c) {
-                      setCompletedCrop(c);
-                    }
-                  }}
-                  aspect={aspect}
+                  onChange={handleCropChange}
+                  onComplete={handleCropComplete}
+                  aspect={FIXED_ASPECT}
                   minWidth={50}
                   minHeight={50}
                   className="max-h-[50vh] w-auto"
@@ -262,31 +232,11 @@ export default function ImageCropModal({
             )}
           </div>
 
-          {/* Aspect Ratio Selector */}
+          {/* Info - Fixed resolution */}
           <div className="px-4 pt-2 pb-1 border-t border-white/10">
-            <p className="text-xs text-gray-400 mb-2">Aspect Ratio</p>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { label: '1:1', value: 1 },
-                { label: '4:3', value: 4 / 3 },
-                { label: '16:9', value: 16 / 9 },
-                { label: '3:2', value: 3 / 2 },
-                { label: '2:3', value: 2 / 3 },
-                { label: 'Free', value: null },
-              ].map((preset) => (
-                <button
-                  key={preset.label}
-                  onClick={() => handleAspectChange(preset.value)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                    aspect === preset.value
-                      ? 'bg-primary text-white'
-                      : 'bg-white/5 text-gray-300 hover:bg-white/10'
-                  }`}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
+            <p className="text-xs text-gray-400">
+              Fixed Aspect Ratio: <span className="text-primary font-medium">16:9 (1280x720)</span>
+            </p>
           </div>
 
           {/* Controls */}
@@ -295,7 +245,8 @@ export default function ImageCropModal({
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleRotate}
-                  className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl text-sm text-white hover:bg-white/10 transition-all cursor-pointer"
+                  disabled={isProcessing}
+                  className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl text-sm text-white hover:bg-white/10 transition-all cursor-pointer disabled:opacity-50"
                 >
                   <IoRefresh size={18} />
                   Rotate
@@ -308,7 +259,8 @@ export default function ImageCropModal({
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleClose}
-                  className="px-4 py-2 bg-white/5 rounded-xl text-sm text-white hover:bg-white/10 transition-all cursor-pointer"
+                  disabled={isProcessing}
+                  className="px-4 py-2 bg-white/5 rounded-xl text-sm text-white hover:bg-white/10 transition-all cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -325,7 +277,7 @@ export default function ImageCropModal({
                   ) : (
                     <>
                       <IoCheckmark size={18} />
-                      Crop & Save
+                      Crop & Save (1280x720)
                     </>
                   )}
                 </button>
@@ -333,7 +285,7 @@ export default function ImageCropModal({
             </div>
 
             <p className="text-xs text-gray-400 mt-2">
-              Drag the crop area to select your image. Use rotate to adjust orientation. Choose an aspect ratio above or select &quot;Free&quot; for unrestricted cropping.
+              Drag the crop area to select your image. The output will be exactly <span className="text-primary font-medium">1280x720</span> pixels.
             </p>
           </div>
         </motion.div>

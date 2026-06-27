@@ -1,6 +1,6 @@
 // frontend/src/app/admin/settings/page.js
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useSettings, useSettingsMutation } from '@/hooks/useApi';
@@ -91,12 +91,11 @@ export default function SettingsPage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [activeSection, setActiveSection] = useState('General');
   const isInitialLoad = useRef(true);
-  // Add a ref to track if we're in the middle of a crop operation
   const isCroppingRef = useRef(false);
 
   useEffect(() => {
     if (settings && isInitialLoad.current) {
-      // Don't reset form if we're in the middle of cropping
+      // Skip if we're in the middle of a crop operation
       if (isCroppingRef.current) {
         return;
       }
@@ -214,7 +213,7 @@ export default function SettingsPage() {
     setForm(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleImageUpload = async (e) => {
+  const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
@@ -223,44 +222,75 @@ export default function SettingsPage() {
     e.target.value = '';
   };
 
-  const handleCropComplete = async (croppedFile) => {
-    // Set cropping flag to prevent re-render from resetting form
+  const handleCropComplete = useCallback(async (croppedFile) => {
+    // Prevent multiple calls
+    if (uploading) return;
+    
     isCroppingRef.current = true;
     setUploading(true);
+    
     try {
+      // Upload the image
       const result = await uploadImage(croppedFile);
-      handleChange('profileImage', result.url);
+      
+      // Update the form with the new image URL
+      setForm(prev => ({ ...prev, profileImage: result.url }));
       toast.success('Profile image uploaded successfully!');
       
-      // Close the modal first
+      // Close the modal FIRST - this ensures the modal is closed before any other state changes
       setShowCropModal(false);
       setSelectedFile(null);
       
-      // Refetch settings after modal is closed
+      // Wait a tiny bit for the modal to close
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Now save the settings with the new image
+      const dataToSave = { ...form, profileImage: result.url };
+      
+      // Stringify any JSON fields
+      if (dataToSave.journeyItems) {
+        dataToSave.journeyItems = JSON.stringify(dataToSave.journeyItems);
+      }
+      if (dataToSave.footerQuickLinks) {
+        dataToSave.footerQuickLinks = JSON.stringify(dataToSave.footerQuickLinks);
+      }
+      if (dataToSave.footerSocialLinks) {
+        dataToSave.footerSocialLinks = JSON.stringify(dataToSave.footerSocialLinks);
+      }
+      
+      // Save to backend
+      await mutation.mutateAsync(dataToSave);
+      
+      // Refetch settings to get the latest data
       await refetch();
       
     } catch (error) {
       console.error('Upload error:', error);
       toast.error(error.message || 'Upload failed');
       // Keep modal open on error so user can retry
+      setShowCropModal(true);
     } finally {
       setUploading(false);
-      // Clear the cropping flag after everything is done
+      // Clear the cropping flag after a delay
       setTimeout(() => {
         isCroppingRef.current = false;
-      }, 100);
+      }, 500);
     }
-  };
+  }, [form, uploading, mutation, refetch]);
 
-  // Handle modal close with cleanup
-  const handleModalClose = () => {
+  const handleModalClose = useCallback(() => {
+    if (uploading) {
+      // Don't close while uploading
+      toast.info('Please wait for the upload to complete');
+      return;
+    }
     setShowCropModal(false);
     setSelectedFile(null);
     isCroppingRef.current = false;
-  };
+  }, [uploading]);
 
   const removeImage = () => {
-    handleChange('profileImage', '');
+    setForm(prev => ({ ...prev, profileImage: '' }));
     toast.success('Profile image removed');
   };
 
@@ -463,7 +493,7 @@ export default function SettingsPage() {
           
           <button 
             type="submit" 
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || uploading}
             className="px-6 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-all disabled:opacity-50 cursor-pointer"
           >
             {mutation.isPending ? 'Saving...' : 'Save Settings'}
