@@ -35,6 +35,7 @@ export default function ImageCropModal({
   const imgRef = useRef(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [aspect, setAspect] = useState(1);
 
   // Reset crop when modal opens with new image
   useEffect(() => {
@@ -60,11 +61,24 @@ export default function ImageCropModal({
     setImageLoaded(true);
     
     if (isFirstLoad) {
-      // Use aspect 1:1 for square crop (best for profile photos)
-      const initialCrop = centerAspectCrop(width, height, 1);
+      const initialCrop = aspect
+        ? centerAspectCrop(width, height, aspect)
+        : undefined;
       setCrop(initialCrop);
       setCompletedCrop(initialCrop);
       setIsFirstLoad(false);
+    }
+  };
+
+  const handleAspectChange = (newAspect) => {
+    setAspect(newAspect);
+    if (imgRef.current && imageLoaded) {
+      const { width, height } = imgRef.current;
+      const newCrop = newAspect
+        ? centerAspectCrop(width, height, newAspect)
+        : undefined;
+      setCrop(newCrop);
+      setCompletedCrop(newCrop);
     }
   };
 
@@ -94,11 +108,29 @@ export default function ImageCropModal({
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
-      // Use 800x800 for square images
-      const SIZE = 800;
+      // Determine output dimensions based on aspect ratio
+      const MAX_SIZE = 1200;
+      let outputWidth, outputHeight;
 
-      canvas.width = SIZE;
-      canvas.height = SIZE;
+      if (aspect) {
+        if (aspect >= 1) {
+          outputWidth = MAX_SIZE;
+          outputHeight = Math.round(MAX_SIZE / aspect);
+        } else {
+          outputHeight = MAX_SIZE;
+          outputWidth = Math.round(MAX_SIZE * aspect);
+        }
+      } else {
+        // Free crop — use natural crop dimensions scaled down to MAX_SIZE
+        const cropNaturalWidth = completedCrop.width * scaleX;
+        const cropNaturalHeight = completedCrop.height * scaleY;
+        const ratio = Math.min(MAX_SIZE / cropNaturalWidth, MAX_SIZE / cropNaturalHeight, 1);
+        outputWidth = Math.round(cropNaturalWidth * ratio);
+        outputHeight = Math.round(cropNaturalHeight * ratio);
+      }
+
+      canvas.width = outputWidth;
+      canvas.height = outputHeight;
 
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
@@ -112,8 +144,8 @@ export default function ImageCropModal({
         cropHeight,
         0,
         0,
-        SIZE,
-        SIZE
+        outputWidth,
+        outputHeight
       );
 
       const blob = await new Promise((resolve) => {
@@ -192,8 +224,7 @@ export default function ImageCropModal({
                       setCompletedCrop(c);
                     }
                   }}
-                  aspect={1}
-                  // Removed circularCrop for square crop
+                  aspect={aspect}
                   minWidth={50}
                   minHeight={50}
                   className="max-h-[50vh] w-auto"
@@ -217,8 +248,35 @@ export default function ImageCropModal({
             )}
           </div>
 
+          {/* Aspect Ratio Selector */}
+          <div className="px-4 pt-2 pb-1 border-t border-white/10">
+            <p className="text-xs text-gray-400 mb-2">Aspect Ratio</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: '1:1', value: 1 },
+                { label: '4:3', value: 4 / 3 },
+                { label: '16:9', value: 16 / 9 },
+                { label: '3:2', value: 3 / 2 },
+                { label: '2:3', value: 2 / 3 },
+                { label: 'Free', value: null },
+              ].map((preset) => (
+                <button
+                  key={preset.label}
+                  onClick={() => handleAspectChange(preset.value)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                    aspect === preset.value
+                      ? 'bg-primary text-white'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Controls */}
-          <div className="p-4 border-t border-white/10">
+          <div className="p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <button
@@ -230,9 +288,6 @@ export default function ImageCropModal({
                 </button>
                 <span className="text-xs text-gray-400">
                   {rotation}° rotation
-                </span>
-                <span className="text-xs text-gray-500 ml-2 px-2 py-1 bg-primary/10 text-primary rounded">
-                  Square crop (1:1)
                 </span>
               </div>
               
@@ -264,7 +319,7 @@ export default function ImageCropModal({
             </div>
 
             <p className="text-xs text-gray-400 mt-2">
-              Drag the crop area to select your image. Use rotate to adjust orientation. The image will be cropped to a square (1:1) for your profile.
+              Drag the crop area to select your image. Use rotate to adjust orientation. Choose an aspect ratio above or select &quot;Free&quot; for unrestricted cropping.
             </p>
           </div>
         </motion.div>
