@@ -367,7 +367,7 @@ const AdminCrudContent = ({
       } else if (field.type === 'tags') {
         defaults[field.key] = [];
       } else {
-        defaults[field.key] = '';
+        defaults[field.key] = field.default ?? '';
       }
     });
     return defaults;
@@ -641,6 +641,12 @@ export default function AdminCrudPage({ title, fields, useHook, mutations: propM
       achievements: Array.isArray(item.achievements) ? item.achievements : [],
       certificates: Array.isArray(item.certificates) ? item.certificates : [],
     };
+    // Convert booleans to strings for select field compatibility
+    fields.forEach(field => {
+      if (field.type === 'select' && typeof safeItem[field.key] === 'boolean') {
+        safeItem[field.key] = String(safeItem[field.key]);
+      }
+    });
     setForm(safeItem);
     setEditing(safeItem);
     setShowForm(true);
