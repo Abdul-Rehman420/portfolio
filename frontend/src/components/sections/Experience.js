@@ -22,7 +22,7 @@ const Experience = () => {
               transition={{ delay: 0.1 * i }}
               className={`relative flex flex-col md:flex-row gap-8 mb-12 ${i % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
               <div className="hidden md:block flex-1" />
-              <div className="absolute left-4 md:left-1/2 top-0 w-3 h-3 rounded-full bg-primary border-2 border-dark-bg -translate-x-1/2 z-10" />
+              <div className="absolute left-4 md:left-1/2 top-0 w-3 h-3 rounded-full bg-primary border-2 border-[var(--bg)] -translate-x-1/2 z-10" />
               <div className={`flex-1 ml-10 md:ml-0 ${i % 2 === 0 ? 'md:text-right md:mr-8' : 'md:ml-8'}`}>
                 <div className="glass p-6 rounded-2xl">
                   <div className="flex items-start justify-between mb-2 flex-wrap gap-2">
@@ -30,12 +30,12 @@ const Experience = () => {
                       <h3 className="text-lg font-semibold">{exp.role}</h3>
                       <p className="text-sm text-primary">{exp.company}</p>
                     </div>
-                    <span className="text-xs text-gray-500 whitespace-nowrap">{exp.duration}</span>
+                    <span className="text-xs text-dim whitespace-nowrap">{exp.duration}</span>
                   </div>
                   {exp.responsibilities?.length > 0 && (
                     <ul className="space-y-1 mb-3">
                       {exp.responsibilities.slice(0, 3).map(r => (
-                        <li key={r} className="text-sm text-gray-400 flex items-start gap-2">
+                        <li key={r} className="text-sm text-muted flex items-start gap-2">
                           <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary/60 flex-shrink-0" />{r}
                         </li>
                       ))}
@@ -58,7 +58,7 @@ const Experience = () => {
                 <div key={cert._id} className="glass p-4 rounded-xl">
                   {cert.image && <Image src={cert.image} alt={cert.title} width={400} height={200} className="w-full h-auto object-contain rounded-lg mb-3" unoptimized={cert.image.startsWith('http')} />}
                   <h4 className="font-medium text-sm">{cert.title}</h4>
-                  <p className="text-xs text-gray-400">{cert.issuer} • {cert.date}</p>
+                  <p className="text-xs text-muted">{cert.issuer} • {cert.date}</p>
                   {cert.link && <a href={cert.link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 inline-block">Verify</a>}
                 </div>
               ))}

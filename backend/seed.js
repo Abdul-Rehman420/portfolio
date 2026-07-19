@@ -521,6 +521,17 @@ const seed = async () => {
         { key: 'typewriterRoles', value: 'MERN Stack Developer,Frontend Developer,React Developer,JavaScript Developer,UI Developer,Full Stack Developer' },
         { key: 'profileImage', value: '' },
         
+        // Hero Stats
+        { key: 'heroYearsExp', value: '3+' },
+        { key: 'heroProjectsDone', value: '20+' },
+        { key: 'heroAwardsWon', value: '5+' },
+        { key: 'trustedBy', value: JSON.stringify([
+          'TechCorp', 'InnovateLabs', 'DigitalStudio', 'StartupHub',
+          'CloudNine', 'DataFlow', 'WebCraft', 'AppForge'
+        ]) },
+        { key: 'processTitle', value: 'How I Work' },
+        { key: 'aboutImage2', value: '' },
+
         // Section Visibility Settings - ALL SECTIONS VISIBLE BY DEFAULT
         { key: 'showHero', value: 'true' },
         { key: 'showAbout', value: 'true' },
@@ -529,6 +540,8 @@ const seed = async () => {
         { key: 'showExperience', value: 'true' },
         { key: 'showServices', value: 'true' },
         { key: 'showTestimonials', value: 'true' },
+        { key: 'showTrustedBy', value: 'true' },
+        { key: 'showProcess', value: 'true' },
         { key: 'showContact', value: 'true' },
         
         // About Section Settings
@@ -609,7 +622,7 @@ const seed = async () => {
     console.log(`  • ${2} Education entries`);
     console.log(`  • ${5} Certifications`);
     console.log(`  • ${6} Social Links`);
-    console.log(`  • ${36} Settings`);
+    console.log(`  • ${44} Settings`);
     
     console.log('\n📝 Next Steps:');
     console.log('  1. Start the backend server: npm run dev');

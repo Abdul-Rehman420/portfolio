@@ -1,53 +1,30 @@
-// frontend/src/components/sections/About.js
 'use client';
 import { motion } from 'framer-motion';
-import { IoLocation, IoBriefcase, IoLanguage, IoTime, IoGlobe } from 'react-icons/io5';
+import Image from 'next/image';
+import { IoCheckmarkCircle, IoFolder, IoRibbon, IoTime } from 'react-icons/io5';
 import { useSettings, useEducation } from '@/hooks/useApi';
+
+const statCards = [
+  { icon: IoCheckmarkCircle, label: 'Happy Clients', key: 'statClients', default: '30+' },
+  { icon: IoFolder, label: 'Projects Done', key: 'heroProjectsDone', default: '20+' },
+  { icon: IoRibbon, label: 'Awards Won', key: 'heroAwardsWon', default: '5+' },
+  { icon: IoTime, label: 'Years Exp', key: 'heroYearsExp', default: '3+' },
+];
 
 const About = () => {
   const { data: settings, isLoading: settingsLoading } = useSettings();
   const { data: education = [], isLoading: educationLoading } = useEducation();
   const s = settings || {};
 
-  // Parse journey items from settings with fallback
-  let journeyItems = [];
-  try {
-    if (s.journeyItems) {
-      journeyItems = typeof s.journeyItems === 'string' 
-        ? JSON.parse(s.journeyItems) 
-        : s.journeyItems;
-    }
-  } catch (e) {
-    console.error('Error parsing journey items:', e);
-    journeyItems = [];
-  }
-
-  // Fallback journey items if none are set
-  if (journeyItems.length === 0) {
-    journeyItems = [
-      { year: '2018', title: 'Started University', description: 'Began BS in Computer Science' },
-      { year: '2020', title: 'First Freelance Project', description: 'Built my first professional website' },
-      { year: '2021', title: 'First Developer Job', description: 'Started as Junior Developer' },
-      { year: '2022', title: 'Full Stack Developer', description: 'Leveled up to Full Stack role' },
-      { year: '2023', title: 'Senior Frontend Developer', description: 'Promoted to Senior role' },
-      { year: '2024', title: 'Tech Lead & Speaker', description: 'Leading projects and speaking at conferences' }
-    ];
-  }
-
-  const infoCards = [
-    { icon: IoLocation, label: 'Location', value: s.aboutLocation || s.location || 'Karachi, Pakistan' },
-    { icon: IoBriefcase, label: 'Experience', value: s.aboutExperience || 'Senior Level' },
-    { icon: IoLanguage, label: 'Languages', value: s.aboutLanguages || 'English, Urdu' },
-    { icon: IoTime, label: 'Availability', value: s.aboutAvailability || 'Available for Full-Time' },
-    { icon: IoGlobe, label: 'Freelance', value: s.aboutFreelance || 'Available' },
-  ];
+  const profileImage = s.profileImage;
+  const aboutImage2 = s.aboutImage2;
 
   if (settingsLoading || educationLoading) {
     return (
       <section id="about" className="relative py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+            <div className="w-8 h-8 border-2 border-[#22c55e] border-t-transparent rounded-full animate-spin mx-auto" />
           </div>
         </div>
       </section>
@@ -57,96 +34,102 @@ const About = () => {
   return (
     <section id="about" className="relative py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <motion.h2 
-          initial={{ opacity: 0, y: 20 }} 
-          whileInView={{ opacity: 1, y: 0 }} 
-          viewport={{ once: true }} 
-          className="text-4xl md:text-5xl font-bold text-center mb-16 gradient-text"
-        >
-          {s.aboutTitle || 'About Me'}
-        </motion.h2>
-        
-        <div className="grid lg:grid-cols-2 gap-12">
-          <motion.div 
-            initial={{ opacity: 0, x: -30 }} 
-            whileInView={{ opacity: 1, x: 0 }} 
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* Left - Image Gallery */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
+            className="relative"
           >
-            <p className="text-gray-400 leading-relaxed mb-6">
-              {s.aboutDescription || 'I am a passionate Full Stack Web Developer with 3+ years of experience building modern, scalable web applications. I specialize in the MERN stack and have a deep understanding of frontend and backend technologies.'}
-            </p>
-            <p className="text-gray-400 leading-relaxed mb-8">
-              {s.aboutDescription2 || 'I specialize in building modern web applications using React.js, Node.js, Express.js, and MongoDB. I am passionate about writing clean, maintainable code and creating exceptional user experiences.'}
-            </p>
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              {infoCards.map(({ icon: Icon, label, value }) => (
-                <div key={label} className="glass p-4 rounded-xl">
-                  <Icon className="text-primary mb-2" size={20} />
-                  <p className="text-xs text-gray-500">{label}</p>
-                  <p className="text-sm font-medium">{value}</p>
-                </div>
-              ))}
+            <div className="relative grid grid-cols-2 gap-4">
+              <div className="relative aspect-[3/4] rounded-2xl overflow-hidden glass">
+                {profileImage ? (
+                  <Image
+                    src={profileImage}
+                    alt={s.siteName || 'Profile'}
+                    fill
+                    className="object-cover"
+                    unoptimized={profileImage.startsWith('http')}
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-6xl font-bold text-faint">{s.siteName?.charAt(0) || 'A'}</span>
+                  </div>
+                )}
+              </div>
+              <div className="relative aspect-[3/4] rounded-2xl overflow-hidden glass mt-8">
+                {aboutImage2 ? (
+                  <Image
+                    src={aboutImage2}
+                    alt="About"
+                    fill
+                    className="object-cover"
+                    unoptimized={aboutImage2.startsWith('http')}
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#22c55e]/5 to-[#16a34a]/5">
+                    <span className="text-4xl font-bold text-faint">AR</span>
+                  </div>
+                )}
+              </div>
             </div>
-            
-            {s.careerObjective && (
-              <>
-                <h3 className="text-lg font-semibold mb-4">Career Objective</h3>
-                <p className="text-gray-400 leading-relaxed">
-                  {s.careerObjective}
-                </p>
-              </>
-            )}
+
+            <div className="absolute -bottom-4 -right-4 w-24 h-24 rounded-full bg-[#22c55e]/5 border border-[#22c55e]/10 -z-10" />
+            <div className="absolute -top-4 -left-4 w-16 h-16 rounded-full bg-[#16a34a]/5 border border-[#16a34a]/10 -z-10" />
           </motion.div>
 
-          <motion.div 
-            initial={{ opacity: 0, x: 30 }} 
-            whileInView={{ opacity: 1, x: 0 }} 
+          {/* Right - Content */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <h3 className="text-lg font-semibold mb-6">My Journey</h3>
-            <div className="relative">
-              <div className="absolute left-4 top-0 bottom-0 w-px bg-linear-to-b from-primary via-secondary to-accent" />
-              {journeyItems.map((item, i) => (
-                <motion.div 
-                  key={i} 
-                  initial={{ opacity: 0, x: 20 }} 
-                  whileInView={{ opacity: 1, x: 0 }} 
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.1 * i }} 
-                  className="relative pl-12 pb-8 last:pb-0"
-                >
-                  <div className="absolute left-2.5 top-1 w-3 h-3 rounded-full bg-primary border-2 border-dark-bg" />
-                  <span className="text-xs text-primary font-semibold">{item.year}</span>
-                  <h4 className="font-medium mt-1">{item.title}</h4>
-                  <p className="text-sm text-gray-400">{item.description}</p>
-                </motion.div>
-              ))}
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-body">
+              About <span className="text-[#22c55e]">Me</span>
+            </h2>
+
+            <p className="text-muted leading-relaxed mb-4">
+              {s.aboutDescription || 'I am a passionate Full Stack Web Developer with 3+ years of experience building modern, scalable web applications.'}
+            </p>
+            <p className="text-muted leading-relaxed mb-8">
+              {s.aboutDescription2 || 'I specialize in building modern web applications using React.js, Node.js, Express.js, and MongoDB.'}
+            </p>
+
+            <div className="grid grid-cols-4 gap-3 mb-8">
+              {statCards.map(({ icon: Icon, label, key, default: def }) => {
+                const value = s[key] || def;
+                return (
+                  <div key={label} className="glass rounded-xl p-3 text-center">
+                    <Icon className="text-[#22c55e] mx-auto mb-1.5" size={18} />
+                    <p className="text-sm font-bold text-body">{value}</p>
+                    <p className="text-[10px] text-dim uppercase tracking-wider">{label}</p>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Education Section - Shows ALL education entries */}
+            {s.careerObjective && (
+              <p className="text-sm text-muted leading-relaxed italic border-l-2 border-[#22c55e]/30 pl-4">
+                {s.careerObjective}
+              </p>
+            )}
+
             {education.length > 0 && (
-              <div className="mt-8">
-                <h3 className="text-lg font-semibold mb-4">Education</h3>
-                <div className="space-y-4">
+              <div className="mt-8 pt-6 border-t border-theme">
+                <h3 className="text-sm font-semibold text-muted uppercase tracking-wider mb-4">Education</h3>
+                <div className="space-y-3">
                   {education.map((edu, index) => (
-                    <motion.div 
-                      key={edu._id || index}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.1 * index }}
-                      className="glass p-6 rounded-xl"
-                    >
-                      <h4 className="font-semibold">{edu.degree}</h4>
-                      <p className="text-sm text-primary">{edu.institution}</p>
-                      <p className="text-xs text-gray-400 mt-1">
+                    <div key={edu._id || index} className="glass rounded-xl p-4 hover:border-primary/20 transition-all">
+                      <h4 className="font-medium text-sm text-body">{edu.degree}</h4>
+                      <p className="text-xs text-[#22c55e] mt-0.5">{edu.institution}</p>
+                      <p className="text-[11px] text-dim mt-1">
                         {edu.duration}
-                        {edu.cgpa ? ` | CGPA: ${edu.cgpa}` : ''}
+                        {edu.cgpa ? ` | ${edu.cgpa}` : ''}
                       </p>
-                      {edu.description && (
-                        <p className="text-sm text-gray-400 mt-2">{edu.description}</p>
-                      )}
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               </div>

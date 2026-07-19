@@ -13,6 +13,7 @@ const fields = [
   { key: 'features', label: 'Features', type: 'tags', placeholder: 'Add feature' },
   { key: 'github', label: 'GitHub URL', type: 'text' },
   { key: 'liveDemo', label: 'Live Demo URL', type: 'text' },
+  { key: 'caseStudy', label: 'Case Study URL', type: 'text' },
   { key: 'date', label: 'Date', type: 'text' },
   { key: 'role', label: 'Role', type: 'text' },
   { key: 'featured', label: 'Featured', type: 'select', default: 'false', options: [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }] },

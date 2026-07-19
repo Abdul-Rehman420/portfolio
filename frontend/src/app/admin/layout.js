@@ -56,7 +56,7 @@ function AdminLayoutInner({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-dark-bg flex">
+    <div className="admin-theme min-h-screen bg-dark-bg flex">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />

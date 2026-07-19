@@ -9,7 +9,7 @@ const SkillBar = ({ name, level, index }) => (
       <span className="text-sm font-medium">{name}</span>
       <span className="text-xs text-primary">{level}%</span>
     </div>
-    <div className="h-2 bg-gray-700/50 rounded-full overflow-hidden">
+    <div className="h-2 bg-bar rounded-full overflow-hidden">
       <motion.div initial={{ width: 0 }} whileInView={{ width: `${level}%` }} viewport={{ once: true }}
         transition={{ duration: 1, delay: 0.1 + 0.05 * index, ease: 'easeOut' }}
         className="h-full bg-gradient-to-r from-primary via-secondary to-accent rounded-full group-hover:shadow-lg group-hover:shadow-primary/30 transition-shadow" />
@@ -29,7 +29,7 @@ const Skills = () => {
           Skills & Expertise
         </motion.h2>
         <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
-          className="text-center text-gray-400 mb-12 max-w-2xl mx-auto">
+          className="text-center text-muted mb-12 max-w-2xl mx-auto">
           Technologies and tools I use to bring ideas to life
         </motion.p>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">

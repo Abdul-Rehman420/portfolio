@@ -7,7 +7,6 @@ import { useSettings, useSettingsMutation } from '@/hooks/useApi';
 import { uploadImage } from '@/lib/api';
 import Image from 'next/image';
 import ImageCropModal from '@/components/admin/ImageCropModal';
-import JourneyItemsEditor from '@/components/admin/JourneyItemsEditor';
 import FooterSettingsEditor from '@/components/admin/FooterSettingsEditor';
 import { 
   IoHome, IoPerson, IoCodeSlash, IoFolder, IoBriefcase, 
@@ -17,7 +16,6 @@ import {
 const settingFields = [
   // General Settings
   { key: 'siteName', label: 'Site Name', type: 'text', section: 'General' },
-  { key: 'siteRole', label: 'Role/Title', type: 'text', section: 'General' },
   { key: 'siteDescription', label: 'Description', type: 'textarea', section: 'General' },
   { key: 'location', label: 'Location', type: 'text', section: 'General' },
   { key: 'email', label: 'Email', type: 'text', section: 'General' },
@@ -27,6 +25,19 @@ const settingFields = [
     description: 'Enter roles separated by commas. Example: MERN Stack Developer,Frontend Developer,React Developer' },
   { key: 'profileImage', label: 'Profile Image', type: 'image', section: 'General',
     description: 'Upload your profile photo (Recommended: Square image, 400x400px or larger)' },
+  { key: 'heroYearsExp', label: 'Years of Experience (Hero stat)', type: 'text', section: 'General',
+    description: 'Example: 3+, 8+' },
+  { key: 'heroProjectsDone', label: 'Projects Completed (Hero stat)', type: 'text', section: 'General',
+    description: 'Example: 20+, 50+' },
+  { key: 'heroAwardsWon', label: 'Awards Won (Hero stat)', type: 'text', section: 'General',
+    description: 'Example: 5+, 12+' },
+  { key: 'statClients', label: 'Happy Clients (About stat)', type: 'text', section: 'General',
+    description: 'Example: 30+, 100+' },
+  { key: 'trustedBy', label: 'Trusted By Companies', type: 'text', section: 'General',
+    description: 'Comma-separated company names. Example: TechCorp,InnovateLabs,DigitalStudio' },
+  { key: 'processTitle', label: 'Process Section Title', type: 'text', section: 'General' },
+  { key: 'aboutImage2', label: 'About Gallery Image 2', type: 'image', section: 'General',
+    description: 'Second image for About section gallery' },
 
   // Section Visibility
   { key: 'showHero', label: 'Show Hero Section', type: 'toggle', section: 'Section Visibility' },
@@ -37,34 +48,18 @@ const settingFields = [
   { key: 'showServices', label: 'Show Services Section', type: 'toggle', section: 'Section Visibility' },
   { key: 'showTestimonials', label: 'Show Testimonials Section', type: 'toggle', section: 'Section Visibility' },
   { key: 'showContact', label: 'Show Contact Section', type: 'toggle', section: 'Section Visibility' },
+  { key: 'showTrustedBy', label: 'Show Trusted By Section', type: 'toggle', section: 'Section Visibility' },
+  { key: 'showProcess', label: 'Show Process Section', type: 'toggle', section: 'Section Visibility' },
 
   // About Section
-  { key: 'aboutTitle', label: 'About Section Title', type: 'text', section: 'About Section' },
   { key: 'aboutDescription', label: 'About Description (Paragraph 1)', type: 'textarea', section: 'About Section' },
   { key: 'aboutDescription2', label: 'About Description (Paragraph 2)', type: 'textarea', section: 'About Section' },
-  { key: 'aboutLocation', label: 'Location', type: 'text', section: 'About Section' },
-  { key: 'aboutExperience', label: 'Experience Level', type: 'text', section: 'About Section' },
-  { key: 'aboutLanguages', label: 'Languages', type: 'text', section: 'About Section' },
-  { key: 'aboutAvailability', label: 'Availability', type: 'text', section: 'About Section' },
-  { key: 'aboutFreelance', label: 'Freelance Status', type: 'text', section: 'About Section' },
   { key: 'careerObjective', label: 'Career Objective', type: 'textarea', section: 'About Section' },
 
-  // Journey Items
-  { key: 'journeyItems', label: 'Journey Items', type: 'journey', section: 'About Section' },
-
   // Footer Settings
-  { key: 'footerTagline', label: 'Tagline', type: 'text', section: 'Footer',
-    description: 'Short description shown below your name in the footer' },
   { key: 'footerCopyright', label: 'Copyright Text', type: 'text', section: 'Footer',
     description: 'Text shown after the year and your name. Example: "All rights reserved."' },
   { key: 'footerQuickLinks', label: 'Quick Links', type: 'footerLinks', section: 'Footer' },
-  { key: 'footerSocialLinks', label: 'Social Links', type: 'footerSocialLinks', section: 'Footer' },
-  { key: 'footerShowSocialLinks', label: 'Show Social Links', type: 'select', section: 'Footer',
-    options: [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }] },
-  { key: 'footerShowQuickLinks', label: 'Show Quick Links', type: 'select', section: 'Footer',
-    options: [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }] },
-  { key: 'footerShowTagline', label: 'Show Tagline', type: 'select', section: 'Footer',
-    options: [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }] },
   { key: 'footerShowCopyright', label: 'Show Copyright', type: 'select', section: 'Footer',
     options: [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }] },
   { key: 'footerShowBackToTop', label: 'Show Back to Top Button', type: 'select', section: 'Footer',
@@ -102,14 +97,6 @@ export default function SettingsPage() {
       
       const parsedSettings = { ...settings };
       
-      if (typeof parsedSettings.journeyItems === 'string') {
-        try {
-          parsedSettings.journeyItems = JSON.parse(parsedSettings.journeyItems);
-        } catch (e) {
-          parsedSettings.journeyItems = [];
-        }
-      }
-      
       if (typeof parsedSettings.footerQuickLinks === 'string') {
         try {
           parsedSettings.footerQuickLinks = JSON.parse(parsedSettings.footerQuickLinks);
@@ -123,19 +110,6 @@ export default function SettingsPage() {
             { label: 'Services', href: '#services' },
             { label: 'Testimonials', href: '#testimonials' },
             { label: 'Contact', href: '#contact' }
-          ];
-        }
-      }
-      
-      if (typeof parsedSettings.footerSocialLinks === 'string') {
-        try {
-          parsedSettings.footerSocialLinks = JSON.parse(parsedSettings.footerSocialLinks);
-        } catch (e) {
-          parsedSettings.footerSocialLinks = [
-            { platform: 'github', url: 'https://github.com/abdulrehman', icon: 'FaGithub' },
-            { platform: 'linkedin', url: 'https://linkedin.com/in/abdulrehman', icon: 'FaLinkedin' },
-            { platform: 'twitter', url: 'https://twitter.com/abdulrehman', icon: 'FaTwitter' },
-            { platform: 'email', url: 'mailto:abdulrehman@example.com', icon: 'FaEnvelope' }
           ];
         }
       }
@@ -155,18 +129,10 @@ export default function SettingsPage() {
 
     const dataToSave = { ...form };
     
-    if (dataToSave.journeyItems) {
-      dataToSave.journeyItems = JSON.stringify(dataToSave.journeyItems);
-    }
-    
     if (dataToSave.footerQuickLinks) {
       dataToSave.footerQuickLinks = JSON.stringify(dataToSave.footerQuickLinks);
     }
     
-    if (dataToSave.footerSocialLinks) {
-      dataToSave.footerSocialLinks = JSON.stringify(dataToSave.footerSocialLinks);
-    }
-
     try {
       await mutation.mutateAsync(dataToSave);
       toast.success('Settings updated successfully!');
@@ -175,27 +141,11 @@ export default function SettingsPage() {
       if (freshSettings.data) {
         const parsedSettings = { ...freshSettings.data };
         
-        if (typeof parsedSettings.journeyItems === 'string') {
-          try {
-            parsedSettings.journeyItems = JSON.parse(parsedSettings.journeyItems);
-          } catch (e) {
-            parsedSettings.journeyItems = [];
-          }
-        }
-        
         if (typeof parsedSettings.footerQuickLinks === 'string') {
           try {
             parsedSettings.footerQuickLinks = JSON.parse(parsedSettings.footerQuickLinks);
           } catch (e) {
             parsedSettings.footerQuickLinks = [];
-          }
-        }
-        
-        if (typeof parsedSettings.footerSocialLinks === 'string') {
-          try {
-            parsedSettings.footerSocialLinks = JSON.parse(parsedSettings.footerSocialLinks);
-          } catch (e) {
-            parsedSettings.footerSocialLinks = [];
           }
         }
         
@@ -248,14 +198,8 @@ export default function SettingsPage() {
       const dataToSave = { ...form, profileImage: result.url };
       
       // Stringify any JSON fields
-      if (dataToSave.journeyItems) {
-        dataToSave.journeyItems = JSON.stringify(dataToSave.journeyItems);
-      }
       if (dataToSave.footerQuickLinks) {
         dataToSave.footerQuickLinks = JSON.stringify(dataToSave.footerQuickLinks);
-      }
-      if (dataToSave.footerSocialLinks) {
-        dataToSave.footerSocialLinks = JSON.stringify(dataToSave.footerSocialLinks);
       }
       
       // Save to backend
@@ -417,37 +361,12 @@ export default function SettingsPage() {
               );
             }
 
-            if (field.type === 'journey') {
-              return (
-                <div key={field.key} className="border-b border-white/10 pb-4">
-                  <label className="text-sm text-gray-400 mb-2 block">{field.label}</label>
-                  <JourneyItemsEditor
-                    value={form[field.key] || []}
-                    onChange={(value) => handleChange(field.key, value)}
-                  />
-                </div>
-              );
-            }
-
             if (field.type === 'footerLinks') {
               return (
                 <div key={field.key} className="border-b border-white/10 pb-4">
                   <label className="text-sm text-gray-400 mb-2 block">{field.label}</label>
                   <FooterSettingsEditor
                     type="quickLinks"
-                    value={form[field.key] || []}
-                    onChange={(value) => handleChange(field.key, value)}
-                  />
-                </div>
-              );
-            }
-
-            if (field.type === 'footerSocialLinks') {
-              return (
-                <div key={field.key} className="border-b border-white/10 pb-4">
-                  <label className="text-sm text-gray-400 mb-2 block">{field.label}</label>
-                  <FooterSettingsEditor
-                    type="socialLinks"
                     value={form[field.key] || []}
                     onChange={(value) => handleChange(field.key, value)}
                   />
