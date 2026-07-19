@@ -5,35 +5,35 @@ const TrustedBy = () => {
   const { data: settings } = useSettings();
   const s = settings || {};
 
-  let companies = [];
+  let technologies = [];
   try {
-    const raw = s.trustedBy;
+    const raw = s.technologies;
     if (raw) {
       if (typeof raw === 'string') {
         if (raw.startsWith('[')) {
-          companies = JSON.parse(raw);
+          technologies = JSON.parse(raw);
         } else {
-          companies = raw.split(',').map(c => c.trim()).filter(Boolean);
+          technologies = raw.split(',').map(c => c.trim()).filter(Boolean);
         }
       } else if (Array.isArray(raw)) {
-        companies = raw;
+        technologies = raw;
       }
     }
   } catch (e) {
-    companies = [];
+    technologies = [];
   }
 
-  if (companies.length === 0) {
-    companies = ['TechCorp', 'InnovateLabs', 'DigitalStudio', 'StartupHub', 'CloudNine', 'DataFlow'];
+  if (technologies.length === 0) {
+    technologies = ['React', 'Next.js', 'Node.js', 'TypeScript', 'MongoDB', 'PostgreSQL', 'Tailwind CSS', 'Three.js', 'Docker', 'Figma'];
   }
 
-  const doubled = [...companies, ...companies];
+  const doubled = [...technologies, ...technologies];
 
   return (
     <section className="relative py-12 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
-        <p className="text-center text-xs uppercase tracking-widest text-dim font-medium">
-          Trusted by
+        <p className="text-center text-xs uppercase tracking-widest text-white font-medium drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
+          Technologies
         </p>
       </div>
       <div className="relative">
@@ -44,7 +44,7 @@ const TrustedBy = () => {
             {doubled.map((name, i) => (
               <span
                 key={`${name}-${i}`}
-                className="text-sm font-medium text-dim hover:text-muted transition-colors whitespace-nowrap tracking-wide"
+                className="text-sm font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] whitespace-nowrap tracking-wide"
               >
                 {name}
               </span>

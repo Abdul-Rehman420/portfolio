@@ -525,9 +525,9 @@ const seed = async () => {
         { key: 'heroYearsExp', value: '3+' },
         { key: 'heroProjectsDone', value: '20+' },
         { key: 'heroAwardsWon', value: '5+' },
-        { key: 'trustedBy', value: JSON.stringify([
-          'TechCorp', 'InnovateLabs', 'DigitalStudio', 'StartupHub',
-          'CloudNine', 'DataFlow', 'WebCraft', 'AppForge'
+        { key: 'technologies', value: JSON.stringify([
+          'React', 'Next.js', 'Node.js', 'TypeScript', 'MongoDB',
+          'PostgreSQL', 'Tailwind CSS', 'Three.js', 'Docker', 'Figma'
         ]) },
         { key: 'processTitle', value: 'How I Work' },
         { key: 'aboutImage2', value: '' },
